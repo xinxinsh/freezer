@@ -16,6 +16,7 @@ limitations under the License.
 
 Freezer general utils functions
 """
+import pytz
 import datetime
 import errno
 import fnmatch as fn
@@ -23,7 +24,9 @@ import os
 import subprocess
 import sys
 import time
+import six
 
+from oslo_utils import encodeutils
 from distutils import spawn as distspawn
 from functools import wraps
 from oslo_log import log
@@ -199,6 +202,12 @@ def date_to_timestamp(date):
     fmt = '%Y-%m-%dT%H:%M:%S'
     opt_backup_date = datetime.datetime.strptime(date, fmt)
     return int(time.mktime(opt_backup_date.timetuple()))
+
+def utc_to_local_timestamp(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%S'):
+    local_tz = pytz.timezone('Asia/Chongqing')
+    utc_dt = datetime.datetime.strptime(utc_time_str, utc_format)
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return DateTime(local_dt).timestamp
 
 
 class Bunch(object):
@@ -510,3 +519,20 @@ def set_max_process_priority():
         ])
     except Exception as priority_error:
         LOG.warning('Priority: {0}'.format(priority_error))
+
+def convert_str(text):
+    """Convert to native string.
+
+    Convert bytes and Unicode strings to native strings:
+
+    * convert to bytes on Python 2:
+      encode Unicode using encodeutils.safe_encode()
+    * convert to Unicode on Python 3: decode bytes from UTF-8
+    """
+    if six.PY2:
+        return encodeutils.safe_encode(text)
+    else:
+        if isinstance(text, bytes):
+            return text.decode('utf-8')
+        else:
+            return text

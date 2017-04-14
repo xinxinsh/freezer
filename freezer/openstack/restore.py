@@ -41,7 +41,10 @@ class RestoreOs(object):
         :type restore_from_timestamp: int
         :return:
         """
-        if self.storage.type == "swift":
+        if self.storage.type == 'ceph':
+            backups = self.storage.get_backups(self.container, path)
+            backups = sorted(map(lambda x: int(x.rsplit("_", 1)[-1]), backups))
+        elif self.storage.type == "swift":
             swift = self.client_manager.get_swift()
             path = "{0}_segments/{1}/".format(self.container, path)
             info, backups = swift.get_container(self.container, prefix=path)
@@ -74,7 +77,12 @@ class RestoreOs(object):
         """
         swift = self.client_manager.get_swift()
         backup = self._get_backups(path, restore_from_timestamp)
-        if self.storage.type == 'swift':
+        if self.storage.type == 'ceph':
+            path = "{0}_{1}".format(path, backup)
+            info = self.storage.get_header(path)
+            image = self.storage.create_image(path)
+            return info, image
+        elif self.storage.type == 'swift':
             path = "{0}_segments/{1}/{2}".format(self.container, path, backup)
             stream = swift.get_object(self.container,
                                       "{}/{}".format(path, backup),
@@ -149,8 +157,7 @@ class RestoreOs(object):
             def get_backups_from_timestamp(backups, restore_from_timestamp):
                 for backup in backups:
                     backup_created_date = backup.created_at.split('.')[0]
-                    backup_created_timestamp = (
-                        utils.date_to_timestamp(backup_created_date))
+                    backup_created_timestamp = utils.utc_to_local_timestamp(backup_created_date)
                     if backup_created_timestamp >= restore_from_timestamp:
                         yield backup
 
@@ -181,11 +188,13 @@ class RestoreOs(object):
         size = length / gb
         if length % gb > 0:
             size += 1
-        LOG.info("Creating volume from image")
+        LOG.info("Creating volume from image %(name)s, %(id)s",
+                 {'name':image.name, 'id':image.id})
         cinder_client = self.client_manager.get_cinder()
         volume = cinder_client.volumes.create(size,
                                               imageRef=image.id,
-                                              name=info['volume_name'])
+                                              name=info['volume_name'],
+                                              volume_type=info.get('volume_type', None))
         while volume.status != "available":
             try:
                 LOG.info("Volume copy status: " + volume.status)

@@ -34,6 +34,7 @@ from freezer.storage import local
 from freezer.storage import multiple
 from freezer.storage import ssh
 from freezer.storage import swift
+from freezer.storage import ceph
 from freezer.utils import config
 from freezer.utils import utils
 
@@ -56,8 +57,8 @@ def freezer_main(backup_args):
         backup_args.hostname, backup_args.backup_name)
 
     max_segment_size = backup_args.max_segment_size
-    if (backup_args.storage ==
-            'swift' or
+    if (backup_args.storage == 'swift' or
+        backup_args.storage == 'ceph' or
             backup_args.backup_media in ['nova', 'cinder', 'cindernative']):
 
         backup_args.client_manager = get_client_manager(backup_args.__dict__)
@@ -186,7 +187,13 @@ def storage_from_dict(backup_args, max_segment_size):
     storage_name = backup_args['storage']
     container = backup_args['container']
 
-    if storage_name == "swift":
+    if storage_name == "ceph":
+        client_manager = backup_args['client_manager']
+        storage = ceph.CephStorage(
+            client_manager,
+            pool=container,
+            max_segment_size=max_segment_size)
+    elif storage_name == "swift":
         client_manager = backup_args['client_manager']
 
         storage = swift.SwiftStorage(

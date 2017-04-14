@@ -68,7 +68,9 @@ class BackupOs(object):
 
         stream = client_manager.download_image(image)
         package = "{0}/{1}".format(instance_id, utils.DateTime.now().timestamp)
-        LOG.info("Uploading image to swift")
+        if self.storage.type == "ceph":
+            package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
+        LOG.info("Uploading image to %s", self.storage.type)
         headers = {"x-object-meta-name": instance.name,
                    "x-object-meta-flavor-id": str(instance.flavor.get('id')),
                    'x-object-meta-length': str(len(stream))}
@@ -99,7 +101,9 @@ class BackupOs(object):
         LOG.debug("Download temporary glance image {0}".format(image.id))
         stream = client_manager.download_image(image)
         package = "{0}/{1}".format(volume_id, utils.DateTime.now().timestamp)
-        LOG.debug("Uploading image to swift")
+        if self.storage.type == "ceph":
+            package = "{0}_{1}".format(volume_id, utils.DateTime.now().timestamp)
+        LOG.debug("Uploading image to %s", self.storage.type)
         headers = {'x-object-meta-length': str(len(stream)),
                    'volume_name': volume.name,
                    'volume_type': volume.volume_type,
@@ -117,7 +121,7 @@ class BackupOs(object):
         client_manager.get_glance().images.delete(image.id)
 
     def backup_cinder(self, volume_id, name=None, description=None,
-                      incremental=False):
+                      incremental=True):
         client_manager = self.client_manager
         cinder = client_manager.get_cinder()
         container = "{0}/{1}/{2}".format(self.container, volume_id,
@@ -129,10 +133,12 @@ class BackupOs(object):
             }
             backups = cinder.backups.list(search_opts=search_opts)
             if len(backups) <= 0:
-                msg = ("Backup volume %s is failed."
-                       "Do a full backup before incremental  backup"
+                msg = ("No backups exists for volume %s ."
+                       "Degrade to do a full backup before do incremental backup"
                        % volume_id)
-                raise Exception(msg)
+                LOG.info(msg)
+                cinder.backups.create(volume_id, container, name, description,
+                                      incremental=False, force=True)
             else:
                 cinder.backups.create(volume_id, container, name, description,
                                       incremental=incremental, force=True)

@@ -12,8 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from freezer import _
 
 class StorageException(Exception):
 
     def __init__(self, message):
         super(StorageException, self).__init__(message)
+
+
+class VolumeMetadataBackupExists(StorageException):
+    message = _("Metadata backup already exists for this volume")
+
+class BackupOperationError(StorageException):
+    message = _("An error has occurred during backup operation")
+
+class InvalidParameterValue(StorageException):
+    message = _("%(err)s")
+

@@ -159,8 +159,10 @@ class SwiftStorage(physical.PhysicalStorage):
 
     def add_stream(self, stream, package_name, headers=None):
         i = 0
+        #freezer_backups/freezer_backups_segments
         backup_basepath = "{0}/{1}".format(self.container, self.segments)
         for el in stream:
+            #freezer_backups/freezer_backups_segments/{package_name}/segments/{No.}
             upload_path = "{0}/{1}/segments/{2}".format(backup_basepath,
                                                         package_name,
                                                         "%08d" % i)
@@ -168,7 +170,7 @@ class SwiftStorage(physical.PhysicalStorage):
             i += 1
         if not headers:
             headers = {}
-
+        #freezer_backups/freezer_backups_segments/{package_name}
         full_path = "{0}/{1}".format(backup_basepath, package_name)
         headers['x-object-manifest'] = full_path
 
@@ -221,9 +223,9 @@ class SwiftStorage(physical.PhysicalStorage):
         try:
             # split[0] will have container name and the split[1] will have
             # the rest of the path. If the path is
-            # freezer_backups/tar/server1.cloud.com_testest/
+            # freezer_backups/metadata/tar/server1.cloud.com_testest/
             # split[0] = freezer_backups which is container name
-            # split[1] = tar/server1.cloud.com_testest/
+            # split[1] = metadata/tar/server1.cloud.com_testest/
             split = path.split('/', 1)
             files = self.swift().get_container(container=split[0],
                                                full_listing=True,

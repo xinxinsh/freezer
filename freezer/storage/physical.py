@@ -57,7 +57,7 @@ class PhysicalStorage(base.Storage):
         :rtype: list[freezer.storage.base.Backup]
         :return: dictionary of level zero timestamps with attached storage
         """
-
+        #/{storage_path}/metadata/{engine_name}/{backup_name}
         path = self.metadata_path(
             engine=engine,
             hostname_backup_name=hostname_backup_name)
