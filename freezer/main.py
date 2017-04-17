@@ -191,8 +191,12 @@ def storage_from_dict(backup_args, max_segment_size):
         client_manager = backup_args['client_manager']
         storage = ceph.CephStorage(
             client_manager,
-            pool=container,
-            max_segment_size=max_segment_size)
+            backup_ceph_pool=backup_args['backup_ceph_pool'],
+            backup_ceph_user=backup_args['backup_ceph_user'],
+            backup_ceph_conf=backup_args['backup_ceph_conf'],
+            backup_ceph_chunk_size=backup_args['backup_ceph_chunk_size'],
+            backup_ceph_stripe_unit=backup_args['backup_ceph_stripe_unit'],
+            backup_ceph_stripe_count=backup_args['backup_ceph_stripe_count'])
     elif storage_name == "swift":
         client_manager = backup_args['client_manager']
 

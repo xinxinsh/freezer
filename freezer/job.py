@@ -306,11 +306,13 @@ class RestoreJob(Job):
             res.restore_cinder_by_glance(conf.cinder_vol_id, restore_timestamp)
         elif conf.backup_media == 'cindernative':
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
-                     " {1}, timestamp: {2}".format(conf.cindernative_vol_id,
+                     " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,
                                                    conf.cindernative_backup_id,
+                                                   conf.cindernative_dest_id,
                                                    restore_timestamp))
             res.restore_cinder(conf.cindernative_vol_id,
                                conf.cindernative_backup_id,
+                               conf.cindernative_dest_id,
                                restore_timestamp)
         else:
             raise Exception("unknown backup type: %s" % conf.backup_media)

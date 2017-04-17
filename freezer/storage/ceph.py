@@ -27,7 +27,7 @@ from oslo_utils import units
 from freezer.storage import physical
 from freezer.utils import utils as freezer_utils
 from freezer.storage import exceptions
-from freezer import _, _LW
+from freezer import _, _LW, _LI
 
 try:
     import rbd
@@ -47,21 +47,29 @@ class CephStorage(physical.PhysicalStorage):
 
     _type = 'ceph'
 
-    def __init__(self, client_manager, pool, max_segment_size, skip_prepare=True):
+    def __init__(self, client_manager, backup_ceph_pool, backup_ceph_user,
+                 backup_ceph_conf, backup_ceph_chunk_size, backup_ceph_stripe_count,
+                 backup_ceph_stripe_unit, skip_prepare=True):
         self.rbd = rbd
         self.rados = rados
         self.client_manager = client_manager
+        self.chunk_size = backup_ceph_chunk_size
 
-        self.rbd_stripe_count = 0
-        self.rbd_stripe_unit = 0
-        self.chunk_size = max_segment_size
+        if self._supports_stripingv2:
+            self.rbd_stripe_count = backup_ceph_stripe_count
+            self.rbd_stripe_unit = backup_ceph_stripe_unit
+        else:
+            LOG.info(_LI("RBD striping not supported - ignoring configuration "
+                         "settings for rbd striping"))
+            self.rbd_stripe_count = 0
+            self.rbd_stripe_unit = 0
 
-        self.ceph_backup_user = freezer_utils.convert_str("admin")
-        self.ceph_backup_pool = freezer_utils.convert_str(pool)
-        self.ceph_backup_conf = freezer_utils.convert_str("/etc/ceph/ceph.conf")
+        self.ceph_backup_user = freezer_utils.convert_str(backup_ceph_user)
+        self.ceph_backup_pool = freezer_utils.convert_str(backup_ceph_pool)
+        self.ceph_backup_conf = freezer_utils.convert_str(backup_ceph_conf)
         super(CephStorage, self).__init__(
-            storage_path=pool,
-            max_segment_size=max_segment_size,
+            storage_path=self.ceph_backup_pool,
+            max_segment_size=self.chunk_size,
             skip_prepare=skip_prepare)
 
     def prepare(self):

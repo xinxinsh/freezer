@@ -27,6 +27,7 @@ from freezer import __version__ as FREEZER_VERSION
 from freezer.utils import config as freezer_config
 from freezer.utils import utils
 from freezer.utils import winutils
+from oslo_utils import units
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
@@ -103,6 +104,13 @@ DEFAULT_PARAMS = {
     'command': None,
     'metadata_out': None,
     'storage': 'ceph',
+    'backup_ceph_user': 'admin',
+    'backup_ceph_conf': '/etc/ceph/ceph.conf',
+    'backup_ceph_pool': 'backups',
+    'backup_ceph_chunk_size': (units.Mi * 128),
+    'backup_ceph_stripe_unit':  0,
+    'backup_ceph_stripe_count': 0,
+    'restore_discard_excess_bytes': True,
     'ssh_key': '',
     'ssh_username': '',
     'ssh_host': '',
@@ -114,6 +122,7 @@ DEFAULT_PARAMS = {
     'consistency_checksum': None,
     'nova_restore_network': None,
     'cindernative_backup_id': None,
+    'cindernative_dest_id': None,
     'sync': True,
     'engine_name': 'tar'
 }
@@ -407,6 +416,11 @@ _COMMON = [
                dest='cindernative_backup_id',
                help="Id of the cindernative backup to be restored"
                ),
+    cfg.StrOpt('cindernative-dest-id',
+               default=DEFAULT_PARAMS['cindernative_dest_id'],
+               dest='cindernative_dest_id',
+               help="Destination volume id of the cindernative restore to"
+               ),
     cfg.StrOpt('nova-inst-id',
                dest='nova_inst_id',
                default=DEFAULT_PARAMS['nova_inst_id'],
@@ -503,11 +517,40 @@ _COMMON = [
                     "attach to the restored VM.")
 ]
 
+_CEPH_OPTS = [
+    cfg.StrOpt('backup_ceph_conf',
+               default=DEFAULT_PARAMS['backup_ceph_conf'],
+               help='Ceph configuration file to use.'),
+    cfg.StrOpt('backup_ceph_user',
+               default='cinder',
+               help='The Ceph user to connect with. Default here is to use '
+                    'the same user as for Cinder volumes. If not using cephx '
+                    'this should be set to None.'),
+    cfg.IntOpt('backup_ceph_chunk_size',
+               default=DEFAULT_PARAMS['backup_ceph_chunk_size'],
+               help='The chunk size, in bytes, that a backup is broken into '
+                    'before transfer to the Ceph object store.'),
+    cfg.StrOpt('backup_ceph_pool',
+               default=DEFAULT_PARAMS['backup_ceph_pool'],
+               help='The Ceph pool where volume backups are stored.'),
+    cfg.IntOpt('backup_ceph_stripe_unit',
+               default=DEFAULT_PARAMS['backup_ceph_stripe_unit'],
+               help='RBD stripe unit to use when creating a backup image.'),
+    cfg.IntOpt('backup_ceph_stripe_count',
+               default=DEFAULT_PARAMS['backup_ceph_stripe_count'],
+               help='RBD stripe count to use when creating a backup image.'),
+    cfg.BoolOpt('restore_discard_excess_bytes',
+                default=DEFAULT_PARAMS['restore_discard_excess_bytes'],
+                help='If True, always discard excess bytes when restoring '
+                     'volumes i.e. pad with zeroes.')
+]
 
 def config(args=[]):
+    default_conf = cfg.find_config_files('freezer', 'agent', '.conf')
     CONF.register_opts(_COMMON)
+    CONF.register_opts(_CEPH_OPTS)
     CONF.register_cli_opts(_COMMON)
-    default_conf = None
+    CONF.register_cli_opts(_CEPH_OPTS)
     log.register_options(CONF)
     CONF(args=args,
          project='freezer',
@@ -543,6 +586,8 @@ def get_backup_args():
         # force log_config_append to always exists in defaults even if not
         # provided.
         defaults['log_config_append'] = None
+        if 'backup_ceph_chunk_size' in defaults:
+            defaults['backup_ceph_chunk_size'] = units.Mi * defaults['backup_ceph_chunk_size']
 
         defaults.update(conf.default)
 
@@ -586,6 +631,10 @@ def get_backup_args():
 
     if CONF.get('config'):
         backup_args.__dict__['config'] = CONF.get('config')
+
+    if 'storage' in backup_args.__dict__ and backup_args.__dict__['storage'] == 'ceph':
+        backup_args.__dict__['container'] = backup_args.__dict__['backup_ceph_pool']
+        backup_args.__dict__['max_segment_size'] = backup_args.__dict__['backup_ceph_chunk_size']
 
     # Set default working directory to ~/.freezer. If the directory
     # does not exists it is created
@@ -637,7 +686,6 @@ def get_backup_args():
         backup_media = 'nova'
 
     backup_args.__dict__['backup_media'] = backup_media
-
     backup_args.__dict__['time_stamp'] = None
 
     if backup_args.upload_limit != -1 or backup_args.download_limit != -1 and \
