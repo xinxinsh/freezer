@@ -139,7 +139,7 @@ def run_job(conf, storage):
         else:
             with open(conf.metadata_out, 'w') as outfile:
                 outfile.write(json.dumps(response))
-    elif response:
+    elif response and isinstance(response, dict):
         pp = prettytable.PrettyTable(["Property", "Value"])
         for k, v in response.items():
             k = k.replace("_", " ")
@@ -147,6 +147,12 @@ def run_job(conf, storage):
         sys.stdout.writelines(pp.get_string())
         sys.stdout.write('\n')
         sys.stdout.flush()
+    elif response and isinstance(response, list):
+        pp = prettytable.PrettyTable()
+        pp.field_names = response[0]
+        for i in response[1]:
+            pp.add_row(i)
+        print (pp)
     else:
         return
 

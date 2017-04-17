@@ -229,23 +229,25 @@ class CephStorage(physical.PhysicalStorage):
     def info(self):
         with RADOSClient(self, self.ceph_backup_pool) as client:
             backups = self.rbd.RBD().list(client.ioctx)
-            ordered_backups = {}
+            ordered_backups = []
             for backup in backups:
-                print(backup)
+                ordered_backup = {}
                 try:
                     image = self.rbd.Image(client.ioctx, backup)
                     info = image.stat()
-                    ordered_backups['image_name'] = "{0}/{1}".format(self.ceph_backup_pool, backup)
-                    size = '{0}'.format((int(info['size']) / 1024) / 1024)
-                    if size == '0':
-                        size = '1'
-                    ordered_backups['size'] = '{0}MB'.format(size)
-                    ordered_backups['objects_count'] = info['num_objs']
-                    print(json.dumps(
-                        ordered_backups, indent=4,
-                        separators=(',', ': '), sort_keys=True))
+                    ordered_backup['image_name'] = "{0}/{1}".format(self.ceph_backup_pool, backup)
+                    size = (int(info['size']) / 1024) / 1024
+                    if size == 0:
+                        size = 1
+                    ordered_backup['size'] = '{0}MB'.format(size)
+                    if size >= 1024:
+                        size /= 1024
+                        ordered_backup['size'] = '{0} GB'.format(size)
+                    ordered_backup['objects_count'] = info['num_objs']
+                    ordered_backups.append(ordered_backup)
                 finally:
                     image.close()
+            return ordered_backups
 
     @staticmethod
     def backup_cindernative_name_pattern():
@@ -479,7 +481,7 @@ class VolumeMetadataBackup(object):
         VolumeMetadataBackupExists if the object already exists.
         """
         meta_obj = rados.Object(self._client.ioctx, self.name)
-        if not self._exists(meta_obj):
+        if self._exists(meta_obj):
             msg = _("Metadata backup object '%s' alreadly exists") % self.name
             raise exceptions.VolumeMetadataBackupExists(msg)
 
