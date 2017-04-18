@@ -227,27 +227,53 @@ class CephStorage(physical.PhysicalStorage):
         return image
 
     def info(self):
+        """Returns nova backups and cindernative backups"""
+        ordered_backups = []
         with RADOSClient(self, self.ceph_backup_pool) as client:
             backups = self.rbd.RBD().list(client.ioctx)
-            ordered_backups = []
-            for backup in backups:
-                ordered_backup = {}
-                try:
-                    image = self.rbd.Image(client.ioctx, backup)
-                    info = image.stat()
-                    ordered_backup['image_name'] = "{0}/{1}".format(self.ceph_backup_pool, backup)
-                    size = (int(info['size']) / 1024) / 1024
-                    if size == 0:
-                        size = 1
-                    ordered_backup['size'] = '{0}MB'.format(size)
-                    if size >= 1024:
-                        size /= 1024
-                        ordered_backup['size'] = '{0} GB'.format(size)
-                    ordered_backup['objects_count'] = info['num_objs']
-                    ordered_backups.append(ordered_backup)
-                finally:
-                    image.close()
-            return ordered_backups
+
+        nova_key = CephStorage.backup_nova_name_pattern()
+        backups = filter(lambda x: re.search(nova_key, x), backups)
+        for backup in backups:
+            ordered_backup = {}
+            with RADOSClient(self, self.ceph_backup_pool) as client:
+                vol_meta = VolumeMetadataBackup(client, backup)
+                json_meta = vol_meta.get()
+
+            header = None
+            if json_meta:
+                header = jsonutils.loads(json_meta)
+
+            ordered_backup['backup_id'] = backup.rsplit('_', 1)[0]
+            ordered_backup['source_id'] = backup.rsplit('_', 1)[0]
+            ordered_backup['status'] = 'available' if header else 'error'
+            ordered_backup['name'] = header['x-object-backup-name'] if header else ''
+
+            size = (int(header['x-object-meta-length']) / 1024) / 1024 if header else 0
+            if size == 0:
+                size = 1
+            ordered_backup['size'] = '{0}MB'.format(size)
+            if size >= 1024:
+                size /= 1024
+                ordered_backup['size'] = '{0} GB'.format(size)
+            ordered_backup['objects_count'] = 0
+            ordered_backup['container'] = header['X-Object-Manifest'].split('/', 1)[0] if header else self.ceph_backup_pool
+            ordered_backups.append(ordered_backup)
+
+        cinder = self.client_manager.get_cinder()
+        backups = cinder.backups.list()
+        for backup in backups:
+            ordered_backup = {}
+            ordered_backup['backup_id'] = backup.id
+            ordered_backup['source_id'] = backup.volume_id
+            ordered_backup['status'] = backup.status
+            ordered_backup['name'] = backup.name
+            ordered_backup['size'] = '{0} GB'.format(backup.size)
+            ordered_backup['objects_count'] = backup.object_count
+            ordered_backup['container'] = backup.container
+            ordered_backups.append(ordered_backup)
+
+        return ordered_backups
 
     @staticmethod
     def backup_cindernative_name_pattern():
@@ -264,13 +290,22 @@ class CephStorage(physical.PhysicalStorage):
         """Remove backups older than remove_older_timestamp"""
         LOG.debug("Delete started for backups older than %s.",
                   datetime.datetime.fromtimestamp(remove_older_timestamp))
+        split = hostname_backup_name.split('_', 1)
         cinder = self.client_manager.get_cinder()
         nova_key = CephStorage.backup_nova_name_pattern()
         backups = self.listdir(self.ceph_backup_pool)
         backups = filter(lambda x: re.search(nova_key, x), backups)
         for backup in backups:
+            with RADOSClient(self) as client:
+                vol = VolumeMetadataBackup(client, backup)
+                vol_meta = vol.get()
+
+            backup_name = None
+            if vol_meta:
+                backup_name = jsonutils.loads(vol_meta)['x-object-backup-name']
             timestamp = backup.rsplit('_', 1)[-1]
-            if int(remove_older_timestamp) >= int(timestamp):
+            if int(remove_older_timestamp) >= int(timestamp)    \
+                and backup_name == split[1]:
                 LOG.debug("Deleting backup for volume %s.", backup)
                 with RADOSClient(self) as client:
                     self.rbd.RBD().remove(client.ioctx, backup)
@@ -279,7 +314,10 @@ class CephStorage(physical.PhysicalStorage):
                 with RADOSClient(self) as client:
                     VolumeMetadataBackup(client, backup).remove_if_exists()
 
-        backups = cinder.backups.list()
+        search_opts = {
+            'name': split[1]
+        }
+        backups = cinder.backups.list(search_opts=search_opts)
         for backup in backups:
             backup_created_date = backup.created_at.split('.')[0]
             backup_created_timestamp = freezer_utils.utc_to_local_timestamp(backup_created_date)

@@ -91,13 +91,17 @@ class InfoJob(Job):
 
         if not info:
             return
-        fields = ["Image Name", "Size", "Object Count"]
+        fields = ["Backup ID", "Source ID", "Status", "Name", "Size", "Object Count", "Container"]
         data = []
         for container in info:
             values = [
-                container.get('image_name'),
+                container.get('backup_id'),
+                container.get('source_id'),
+                container.get('status'),
+                container.get('name'),
                 container.get('size'),
-                container.get('objects_count')
+                container.get('objects_count'),
+                container.get('container')
             ]
             data.append(values)
         return [fields, data]
@@ -239,7 +243,8 @@ class BackupJob(Job):
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
                 self.conf.nova_inst_id))
-            backup_os.backup_nova(self.conf.nova_inst_id)
+            backup_os.backup_nova(self.conf.nova_inst_id,
+                                  name=self.conf.backup_name)
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,

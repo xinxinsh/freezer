@@ -39,7 +39,7 @@ class BackupOs(object):
         self.container = container
         self.storage = storage
 
-    def backup_nova(self, instance_id):
+    def backup_nova(self, instance_id, name=None):
         """
         Implement nova backup
         :param instance_id: Id of the instance for backup
@@ -72,6 +72,7 @@ class BackupOs(object):
             package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
         LOG.info("Uploading image to %s", self.storage.type)
         headers = {"x-object-meta-name": instance.name,
+                   "x-object-backup-name": name,
                    "x-object-meta-flavor-id": str(instance.flavor.get('id')),
                    'x-object-meta-length': str(len(stream))}
         self.storage.add_stream(stream, package, headers)

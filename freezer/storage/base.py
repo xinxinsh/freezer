@@ -227,22 +227,29 @@ class Backup(object):
             self.increments_data_path = utils.path_join(
                 self.storage.storage_path, "data", self.engine.name,
                 self.hostname_backup_name, self.level_zero_timestamp)
+
             #/{storage_path}/metadata/{engine_name}/{backup_name}/{zero_timestamp}
             self.increments_metadata_path = utils.path_join(
                 self.storage.storage_path, "metadata", self.engine.name,
                 self.hostname_backup_name, self.level_zero_timestamp)
+
             #//{storage_path}/data/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}
             self.data_prefix_path = utils.path_join(
                 self.increments_data_path,
                 "{0}_{1}".format(self.level, self.timestamp))
+
+            #//{storage_path}/data/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}/engine_metadata
             self.engine_metadata_path = utils.path_join(
                 self.data_prefix_path, "engine_metadata")
-            #//{storage_path}/metadata/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}
+
+            #//{storage_path}/metadata/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}/metadata
             self.metadata_path = utils.path_join(
                 self.increments_metadata_path,
                 "{0}_{1}".format(self.level, self.timestamp), "metadata")
+
             #///{storage_path}/data/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}/data
             self.data_path = utils.path_join(self.data_prefix_path, "data")
+
             #///{storage_path}/data/{engine_name}/{backup_name}/{zero_timestamp}/{level}_{timestamp}/segments
             self.segments_path = utils.path_join(self.data_prefix_path,
                                                  "segments")
