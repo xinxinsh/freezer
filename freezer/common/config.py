@@ -85,6 +85,8 @@ DEFAULT_PARAMS = {
     'cinder_vol_id': '',
     'cindernative_vol_id': '',
     'nova_inst_id': '',
+    'backup_nova_name':'',
+    'backup_flavor_id':'',
     '__version__': FREEZER_VERSION,
     'remove_older_than': None,
     'restore_from_date': None,
@@ -426,6 +428,16 @@ _COMMON = [
                default=DEFAULT_PARAMS['nova_inst_id'],
                help="Id of nova instance for backup"
                ),
+     cfg.StrOpt('backup-nova-name',
+               dest='backup_nova_name',
+               default=DEFAULT_PARAMS['backup_nova_name'],
+               help="Name of nova instance for backup"
+               ),  
+      cfg.StrOpt('backup-flavor-id',
+               dest='backup_flavor_id',
+               default=DEFAULT_PARAMS['backup_flavor_id'],
+               help="Id of flavor instance for backup"
+               ), 
     cfg.StrOpt('sql-server-conf',
                dest='sql_server_conf',
                default=DEFAULT_PARAMS['sql_server_conf'],
