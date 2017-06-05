@@ -251,7 +251,9 @@ class OSClientManager(object):
             force=True,
             image_name=image_volume_name,
             container_format="bare",
-            disk_format="raw")[1]["os-volume_upload_image"]["image_id"]
+            disk_format="raw",
+            metadata={})[1]["os-volume_upload_image"]["image_id"]
+
         image = self.get_glance().images.get(image_id)
         while image.status != "active":
             try:

@@ -311,17 +311,15 @@ class RestoreJob(Job):
         res = restore.RestoreOs(conf.client_manager, conf.container,
                                 self.storage)
         if conf.backup_media == 'nova':
-            if conf.is_rollback:
-                LOG.inof("Rollback nova backup. Instance ID:{0}, timestamp:{1} "
-                         .format(conf.nova_inst_id, restore_timestamp))
-                res.rollback_nova(conf.nova_inst_id, restore_timestamp)
-            else:
-                LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
-                        "network-id {2}".format(conf.nova_inst_id,
-                                                restore_timestamp,
-                                                conf.nova_restore_network))
-                res.restore_nova(conf.nova_inst_id, restore_timestamp,
-                                conf.nova_restore_network)
+            LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
+                     "network-id {2}, backup-nova-name: {3}, backup-flavor-id: {4}".
+                     format(conf.nova_inst_id, restore_timestamp,
+                            conf.nova_restore_network,conf.backup_nova_name,
+                            conf.backup_flavor_id))
+
+            res.restore_nova(conf.nova_inst_id, restore_timestamp,
+                             conf.nova_restore_network, conf.backup_nova_name, 
+                             conf.backup_flavor_id)
         elif conf.backup_media == 'cinder':
             LOG.info("Restoring cinder backup from glance. Volume ID: {0}, "
                      "timestamp: {1}".format(conf.cinder_vol_id,
