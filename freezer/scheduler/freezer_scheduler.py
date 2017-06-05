@@ -215,7 +215,7 @@ def main():
 
     if CONF.no_api is False:
         try:
-            apiclient = client.Client(opts=CONF, verify=verify)
+            apiclient = client.Client(opts=CONF, insecure=verify)
             if CONF.client_id:
                 apiclient.client_id = CONF.client_id
         except Exception as e:

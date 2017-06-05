@@ -212,7 +212,8 @@ class RestoreOs(object):
         self.client_manager.get_glance().images.delete(image.id)
 
     def restore_nova(self, instance_id, restore_from_timestamp,
-                     nova_network=None):
+                     nova_network=None, backup_nova_name=None, 
+                     backup_flavor_id=None):
         """
         :param restore_from_timestamp:
         :type restore_from_timestamp: int
@@ -228,19 +229,27 @@ class RestoreOs(object):
         # openstack oslient.
         nova = self.client_manager.get_nova()
         (info, image) = self._create_image(instance_id, restore_from_timestamp)
-        flavor = nova.flavors.get(info['x-object-meta-flavor-id'])
+        
+        if backup_nova_name :
+            name = backup_nova_name
+        else:
+            name = info['x-object-meta-name']
+        if backup_flavor_id :
+            flavor = nova.flavors.get(backup_flavor_id)
+        else:
+            flavor = nova.flavors.get(info['x-object-meta-flavor-id'])
         LOG.info("Creating an instance")
         instance = None
         if nova_network:
             nics_id = [nic.id for nic in nova.networks.findall()]
             if nova_network not in nics_id:
                 raise Exception("The network %s is invalid" % nova_network)
-            instance = nova.servers.create(info['x-object-meta-name'],
+            instance = nova.servers.create(name,
                                            image, flavor,
                                            nics=[{'net-id': nova_network}])
         else:
             try:
-                instance = nova.servers.create(info['x-object-meta-name'],
+                instance = nova.servers.create(name,
                                                image, flavor)
             except Exception as e:
                 LOG.warn(e)
@@ -254,5 +263,5 @@ class RestoreOs(object):
             instance = nova.servers.get(instance)
             if not instance.__dict__['OS-EXT-STS:task_state']:
                 glance = self.client_manager.create_glance()
-                glance.images.delete(image.id)
+                #glance.images.delete(image.id)
                 return
