@@ -88,6 +88,7 @@ DEFAULT_PARAMS = {
     '__version__': FREEZER_VERSION,
     'remove_older_than': None,
     'restore_from_date': None,
+    'is_rollback': False,
     'upload_limit': -1,
     'always_level': False,
     'version': None,
@@ -354,6 +355,11 @@ _COMMON = [
                     "i.e. '1979-10-03T23:23:23'. Make sure the 'T' is between "
                     "date and time Default None."
                ),
+    cfg.StrOpt('is_rollback',
+               dest='is_rollback',
+               default=DEFAULT_PARAMS['is_rollback'],
+               help="Set this flag to True to rollback instance to "
+                    "specified backup, default is false"),
     cfg.StrOpt('max-priority',
                dest='max_priority',
                default=DEFAULT_PARAMS['max_priority'],

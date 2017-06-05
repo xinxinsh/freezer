@@ -256,3 +256,43 @@ class RestoreOs(object):
                 glance = self.client_manager.create_glance()
                 glance.images.delete(image.id)
                 return
+
+
+    def restore_nova(self, instance_id, restore_from_timestamp,
+                     nova_network=None):
+        """
+        :param restore_from_timestamp:
+        :type restore_from_timestamp: int
+        :param instance_id: id of attached nova instance
+        :return:
+        """
+        nova = self.client_manager.get_nova()
+        (info, image) = self._create_image(instance_id, restore_from_timestamp)
+        flavor = nova.flavors.get(info['x-object-meta-flavor-id'])
+        LOG.info("Creating an instance")
+        instance = None
+        if nova_network:
+        nics_id = [nic.id for nic in nova.networks.findall()]
+        if nova_network not in nics_id:
+            raise Exception("The network %s is invalid" % nova_network)
+        instance = nova.servers.create(info['x-object-meta-name'],
+                                       image, flavor,
+                                       nics=[{'net-id': nova_network}])
+        else:
+            try:
+                instance = nova.servers.create(info['x-object-meta-name'],
+                                           image, flavor)
+            except Exception as e:
+                LOG.warn(e)
+                raise Exception("The parameter --nova-restore-network "
+                                "is required")
+        # loop and wait till the server is up then remove the image
+        # let's wait 100 second
+        LOG.info('Delete instance image from glance {0}'.format(image))
+        for i in range(0, 360):
+            time.sleep(10)
+            instance = nova.servers.get(instance)
+            if not instance.__dict__['OS-EXT-STS:task_state']:
+                glance = self.client_manager.create_glance()
+                glance.images.delete(image.id)
+                return
