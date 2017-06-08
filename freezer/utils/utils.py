@@ -31,6 +31,7 @@ from distutils import spawn as distspawn
 from functools import wraps
 from oslo_log import log
 from six.moves import configparser
+from freezer.exceptions import utils
 
 
 LOG = log.getLogger(__name__)
@@ -536,3 +537,12 @@ def convert_str(text):
             return text.decode('utf-8')
         else:
             return text
+
+def wait_for(condition_func, wait_interval, timeout, message=None, kwargs={}):
+    while timeout:
+        if condition_func(**kwargs):
+            return
+        time.sleep(wait_interval)
+        timeout -= wait_interval
+
+    raise utils.TimeoutException(message)

@@ -21,7 +21,6 @@ import os
 import time
 
 from oslo_log import log
-
 from freezer.utils import utils
 
 LOG = log.getLogger(__name__)
@@ -238,8 +237,8 @@ class RestoreOs(object):
             flavor = nova.flavors.get(backup_flavor_id)
         else:
             flavor = nova.flavors.get(info['x-object-meta-flavor-id'])
+
         LOG.info("Creating an instance")
-        instance = None
         if nova_network:
             nics_id = [nic.id for nic in nova.networks.findall()]
             if nova_network not in nics_id:
@@ -255,20 +254,18 @@ class RestoreOs(object):
                 LOG.warn(e)
                 raise Exception("The parameter --nova-restore-network "
                                 "is required")
-        # loop and wait till the server is up then remove the image
-        # let's wait 100 second
-        LOG.info('Delete instance image from glance {0}'.format(image))
-        for i in range(0, 360):
-            time.sleep(10)
-            instance = nova.servers.get(instance)
-            if not instance.__dict__['OS-EXT-STS:task_state']:
-                glance = self.client_manager.create_glance()
-                #glance.images.delete(image.id)
-                return
 
+        new_instance_id = instance.__dict__['id']
+        LOG.info('Wait instance to become active')
+        def instance_finish_task():
+            instance = nova.servers.get(new_instance_id)
+            return not instance.__dict__['OS-EXT-STS:task_state']
 
-    def restore_nova(self, instance_id, restore_from_timestamp,
-                     nova_network=None):
+        utils.wait_for(instance_finish_task, 5, 300,
+                       message="Wait for instance {0} to become active".format(new_instance_id))
+        return
+
+    def rollback_nova(self, instance_id, restore_from_timestamp):
         """
         :param restore_from_timestamp:
         :type restore_from_timestamp: int
@@ -277,31 +274,19 @@ class RestoreOs(object):
         """
         nova = self.client_manager.get_nova()
         (info, image) = self._create_image(instance_id, restore_from_timestamp)
-        flavor = nova.flavors.get(info['x-object-meta-flavor-id'])
-        LOG.info("Creating an instance")
-        instance = None
-        if nova_network:
-        nics_id = [nic.id for nic in nova.networks.findall()]
-        if nova_network not in nics_id:
-            raise Exception("The network %s is invalid" % nova_network)
-        instance = nova.servers.create(info['x-object-meta-name'],
-                                       image, flavor,
-                                       nics=[{'net-id': nova_network}])
-        else:
-            try:
-                instance = nova.servers.create(info['x-object-meta-name'],
-                                           image, flavor)
-            except Exception as e:
-                LOG.warn(e)
-                raise Exception("The parameter --nova-restore-network "
-                                "is required")
-        # loop and wait till the server is up then remove the image
-        # let's wait 100 second
-        LOG.info('Delete instance image from glance {0}'.format(image))
-        for i in range(0, 360):
-            time.sleep(10)
-            instance = nova.servers.get(instance)
-            if not instance.__dict__['OS-EXT-STS:task_state']:
-                glance = self.client_manager.create_glance()
-                glance.images.delete(image.id)
-                return
+
+        LOG.info("Rollback instance, id: %s", instance_id)
+        try:
+            nova.servers.rebuild(instance_id, image)
+        except Exception as e:
+            LOG.warn(e)
+            raise Exception("Rollback instance failed")
+
+        LOG.info('Wait for instance to become active')
+        def instance_finish_task():
+            instance = nova.servers.get(instance_id)
+            return not instance.__dict__['OS-EXT-STS:task_state']
+
+        utils.wait_for(instance_finish_task, 5, 300,
+                       message="Wait for instance {0} to become active".format(instance_id))
+        return

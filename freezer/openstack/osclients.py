@@ -277,7 +277,7 @@ class OSClientManager(object):
         LOG.info("Deleting existed snapshot: " + snapshot.id)
         self.get_cinder().volume_snapshots.delete(snapshot)
 
-    def download_image(self, image):
+    def download_image(self, image, chunk_size=4000000):
         """
         Creates a stream for image data
         :param image: Image object for downloading
@@ -286,7 +286,7 @@ class OSClientManager(object):
         LOG.debug("Download image enter")
         stream = self.get_glance().images.data(image.id)
         LOG.debug("Stream with size {0}".format(image.size))
-        return utils.ReSizeStream(stream, image.size, 1000000)
+        return utils.ReSizeStream(stream, image.size, chunk_size)
 
     def create_image(self, name, container_format, disk_format, data=None):
         LOG.info("Creating glance image")

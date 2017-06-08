@@ -110,7 +110,7 @@ DEFAULT_PARAMS = {
     'backup_ceph_user': 'admin',
     'backup_ceph_conf': '/etc/ceph/ceph.conf',
     'backup_ceph_pool': 'backups',
-    'backup_ceph_chunk_size': (units.Mi * 128),
+    'backup_ceph_chunk_size': (units.Mi * 8),
     'backup_ceph_stripe_unit':  0,
     'backup_ceph_stripe_count': 0,
     'restore_discard_excess_bytes': True,
@@ -357,7 +357,7 @@ _COMMON = [
                     "i.e. '1979-10-03T23:23:23'. Make sure the 'T' is between "
                     "date and time Default None."
                ),
-    cfg.StrOpt('is_rollback',
+    cfg.StrOpt('is-rollback',
                dest='is_rollback',
                default=DEFAULT_PARAMS['is_rollback'],
                help="Set this flag to True to rollback instance to "
@@ -605,7 +605,7 @@ def get_backup_args():
         # provided.
         defaults['log_config_append'] = None
         if 'backup_ceph_chunk_size' in defaults:
-            defaults['backup_ceph_chunk_size'] = units.Mi * defaults['backup_ceph_chunk_size']
+            defaults['backup_ceph_chunk_size'] = defaults['backup_ceph_chunk_size']
 
         defaults.update(conf.default)
 

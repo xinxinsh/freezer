@@ -51,22 +51,30 @@ class BackupOs(object):
         instance = nova.servers.get(instance_id)
         glance = client_manager.get_glance()
 
-        if instance.__dict__['OS-EXT-STS:task_state']:
-            time.sleep(5)
-            instance = nova.servers.get(instance)
+        def instance_finish_task():
+            instance = nova.servers.get(instance_id)
+            return not instance.__dict__['OS-EXT-STS:task_state']
+
+        utils.wait_for(instance_finish_task, 5, 300,
+                       message="Wait for instance {0} to finish {1} to start snapshot "
+                               "process".format(instance_id,
+                                                instance.__dict__['OS-EXT-STS:task_state']))
 
         image_id = nova.servers.create_image(instance,
                                              "snapshot_of_%s" % instance_id)
+        def image_active():
+            image = glance.images.get(image_id)
+            return image.status == 'active'
 
-        image = glance.images.get(image_id)
-        while image.status != 'active':
-            time.sleep(5)
-            try:
-                image = glance.images.get(image_id)
-            except Exception as e:
-                LOG.error(e)
+        utils.wait_for(image_active, 5, 300,
+                       message="Wait for instance {0} "
+                                "snapshot {1} to become active".format(instance_id, image_id))
+        try:
+            image = glance.images.get(image_id)
+        except Exception as e:
+            LOG.error(e)
 
-        stream = client_manager.download_image(image)
+        stream = client_manager.download_image(image, self.storage.max_segment_size)
         package = "{0}/{1}".format(instance_id, utils.DateTime.now().timestamp)
         if self.storage.type == "ceph":
             package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
@@ -100,7 +108,7 @@ class BackupOs(object):
         image = client_manager.make_glance_image(copied_volume.id,
                                                  copied_volume)
         LOG.debug("Download temporary glance image {0}".format(image.id))
-        stream = client_manager.download_image(image)
+        stream = client_manager.download_image(image, self.storage.max_segment_size)
         package = "{0}/{1}".format(volume_id, utils.DateTime.now().timestamp)
         if self.storage.type == "ceph":
             package = "{0}_{1}".format(volume_id, utils.DateTime.now().timestamp)
