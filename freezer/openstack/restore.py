@@ -75,26 +75,37 @@ class RestoreOs(object):
         :return:
         """
         swift = self.client_manager.get_swift()
+        glance = self.client_manager.get_glance()
         backup = self._get_backups(path, restore_from_timestamp)
         if self.storage.type == 'ceph':
             path = "{0}_{1}".format(path, backup)
             info = self.storage.get_header(path)
-            image = self.storage.create_image(path)
-            return info, image
+            images = list(glance.images.list(filters=
+                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+            if images and images[0]['status'] == 'active':
+                return info, images[0]
+            else:
+                image = self.storage.create_image(path)
+                return info, image
         elif self.storage.type == 'swift':
             path = "{0}_segments/{1}/{2}".format(self.container, path, backup)
             stream = swift.get_object(self.container,
                                       "{}/{}".format(path, backup),
-                                      resp_chunk_size=10000000)
+                                      resp_chunk_size=self.storage.max_segment_size)
             length = int(stream[0]["x-object-meta-length"])
-            data = utils.ReSizeStream(stream[1], length, 1)
+            data = utils.ReSizeStream(stream[1], length, self.storage.max_segment_size)
             info = stream[0]
-            image = self.client_manager.create_image(
-                name="restore_{}".format(path),
-                container_format="bare",
-                disk_format="raw",
-                data=data)
-            return info, image
+            images = list(glance.images.list(filters=
+                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+            if images and images[0]['status'] == 'active':
+                return info, images[0]
+            else:
+                image = self.client_manager.create_image(
+                    name="restore_{}".format(path),
+                    container_format="bare",
+                    disk_format="raw",
+                    data=data)
+                return info, image
         elif self.storage.type == 'local':
             image_file = "{0}/{1}/{2}/{3}".format(self.container, path,
                                                   backup, path)
@@ -107,12 +118,17 @@ class RestoreOs(object):
                 LOG.error(msg)
                 raise BaseException(msg)
             info = json.load(file(metadata_file))
-            image = self.client_manager.create_image(
-                name="restore_{}".format(path),
-                container_format="bare",
-                disk_format="raw",
-                data=data)
-            return info, image
+            images = list(glance.images.list(filters=
+                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+            if images and images[0]['status'] == 'active':
+                return info, images[0]
+            else:
+                image = self.client_manager.create_image(
+                    name="restore_{}".format(path),
+                    container_format="bare",
+                    disk_format="raw",
+                    data=data)
+                return info, image
         elif self.storage.type == 'ssh':
             image_file = "{0}/{1}/{2}/{3}".format(self.container, path,
                                                   backup, path)
@@ -125,12 +141,17 @@ class RestoreOs(object):
                 LOG.error(msg)
                 raise BaseException(msg)
             info = json.loads(self.storage.read_metadata_file(metadata_file))
-            image = self.client_manager.create_image(
-                name="restore_{}".format(path),
-                container_format="bare",
-                disk_format="raw",
-                data=data)
-            return info, image
+            images = list(glance.images.list(filters=
+                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+            if images and images[0]['status'] == 'active':
+                return info, images[0]
+            else:
+                image = self.client_manager.create_image(
+                    name="restore_{}".format(path),
+                    container_format="bare",
+                    disk_format="raw",
+                    data=data)
+                return info, image
         else:
             return {}
 
