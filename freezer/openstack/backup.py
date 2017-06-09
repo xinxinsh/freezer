@@ -43,6 +43,7 @@ class BackupOs(object):
         """
         Implement nova backup
         :param instance_id: Id of the instance for backup
+        :param name: name of this backup
         :return:
         """
         instance_id = instance_id

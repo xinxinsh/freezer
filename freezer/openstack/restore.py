@@ -60,7 +60,7 @@ class RestoreOs(object):
                    " Try local, swift or ssh".format(self.storage.type))
             print(msg)
             raise BaseException(msg)
-        backups = list(filter(lambda x: x >= restore_from_timestamp, backups))
+        backups = list(filter(lambda x: x <= restore_from_timestamp, backups))
         if not backups:
             msg = "Cannot find backups for path: %s" % path
             LOG.error(msg)
