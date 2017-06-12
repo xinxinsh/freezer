@@ -310,7 +310,6 @@ class OSClientManager(object):
         LOG.info("Created glance image {}".format(image.id))
         return image
 
-
 class OpenstackOpts(object):
     """
     Gathering and maintaining the right Openstack credentials that will be used

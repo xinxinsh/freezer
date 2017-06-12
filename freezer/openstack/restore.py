@@ -96,7 +96,7 @@ class RestoreOs(object):
             data = utils.ReSizeStream(stream[1], length, self.storage.max_segment_size)
             info = stream[0]
             images = list(glance.images.list(filters=
-                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+                                             {"name":"restore_{}".format(path)}))
             if images and images[0]['status'] == 'active':
                 return info, images[0]
             else:
@@ -119,7 +119,7 @@ class RestoreOs(object):
                 raise BaseException(msg)
             info = json.load(file(metadata_file))
             images = list(glance.images.list(filters=
-                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+                                             {"name":"restore_{}".format(path)}))
             if images and images[0]['status'] == 'active':
                 return info, images[0]
             else:
@@ -142,7 +142,7 @@ class RestoreOs(object):
                 raise BaseException(msg)
             info = json.loads(self.storage.read_metadata_file(metadata_file))
             images = list(glance.images.list(filters=
-                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+                                             {"name":"restore_{}".format(path)}))
             if images and images[0]['status'] == 'active':
                 return info, images[0]
             else:
