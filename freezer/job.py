@@ -162,7 +162,7 @@ class BackupJob(Job):
             'vol_snap_path': self.conf.path_to_backup,
             'client_os': sys.platform,
             'source_id':source_id,
-            'project':self.conf.project
+            'project_id':self.conf.project_id,
             'description':self.conf.description,
             'end_time_stamp': end_time_stamp,
             'backup_chain_name':backup_chain_name,

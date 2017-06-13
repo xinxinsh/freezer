@@ -143,7 +143,7 @@ class BackupOs(object):
                 'status': 'available'
             }
             meta['backup_chain_name'] = name
-            cinder.backup.set_metadata(volume_id, meta)
+            cinder.volumes.set_metadata(volume_id, meta)
             backups = cinder.backups.list(search_opts=search_opts)
             if len(backups) <= 0:
                 msg = ("No backups exists for volume %s ."
