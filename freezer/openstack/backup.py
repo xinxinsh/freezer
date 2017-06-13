@@ -136,22 +136,31 @@ class BackupOs(object):
         cinder = client_manager.get_cinder()
         container = "{0}/{1}/{2}".format(self.container, volume_id,
                                          utils.DateTime.now().timestamp)
+        meta = {}
         if incremental:
             search_opts = {
                 'volume_id': volume_id,
                 'status': 'available'
             }
+            meta['backup_chain_name'] = name
+            cinder.backup.set_metadata(volume_id, meta)
             backups = cinder.backups.list(search_opts=search_opts)
             if len(backups) <= 0:
                 msg = ("No backups exists for volume %s ."
                        "Degrade to do a full backup before do incremental backup"
                        % volume_id)
                 LOG.info(msg)
-                cinder.backups.create(volume_id, container, name, description,
-                                      incremental=False, force=True)
+                backup_meta = cinder.backups.create(volume_id, container, name, description,
+                                                    incremental=False, force=True)
             else:
-                cinder.backups.create(volume_id, container, name, description,
-                                      incremental=incremental, force=True)
+                backup_volumes = cinder.volumes.get(volume_id)
+                meta['backup_chain_name'] = backup_volumes.metadata['backup_chain_name']
+                backup_meta = cinder.backups.create(volume_id, container, name, description,
+                                                    incremental=incremental, force=True)
         else:
-            cinder.backups.create(volume_id, container, name, description,
-                                  incremental=incremental, force=True)
+            meta['backup_chain_name'] = name
+            cinder.volumes.set_metadata(volume_id, meta)
+            backup_meta = cinder.backups.create(volume_id, container, name, description,
+                                                incremental=incremental, force=True)
+        backup_meta._info['backup_chain_name'] = meta['backup_chain_name']
+        return backup_meta._info

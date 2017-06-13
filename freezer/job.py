@@ -139,14 +139,34 @@ class BackupJob(Job):
         mod_name = 'freezer.mode.{0}.{1}'.format(
             self.conf.mode, self.conf.mode.capitalize() + 'Mode')
         app_mode = importutils.import_object(mod_name, self.conf)
-        backup_level = self.backup(app_mode)
+
+        backup_level = None
+        backup_backend_meta = self.backup(app_mode)
         level = backup_level or 0
+
+        if self.conf.mode == "nova":
+             source_id = self.conf.nova_inst_id
+             backup_chain_name = self.conf.backup_name
+        elif self.conf.mode == "cindernative" :
+             source_id = self.conf.cindernative_vol_id
+             backup_chain_name = backup_backend_meta['backup_chain_name']
+        else:
+             source_id = ''
+             backup_chain_name = ''
+
+        end_time_stamp = utils.DateTime.now().timestamp
 
         metadata = {
             'curr_backup_level': level,
             'fs_real_path': self.conf.path_to_backup,
             'vol_snap_path': self.conf.path_to_backup,
             'client_os': sys.platform,
+            'source_id':source_id,
+            'project':self.conf.project
+            'description':self.conf.description,
+            'end_time_stamp': end_time_stamp,
+            'backup_chain_name':backup_chain_name,
+            'is_incremental':self.conf.incremental,
             'client_version': self.conf.__version__,
             'time_stamp': self.conf.time_stamp,
         }
@@ -249,9 +269,10 @@ class BackupJob(Job):
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
                                                self.conf.incremental))
-            backup_os.backup_cinder(self.conf.cindernative_vol_id,
-                                    name=self.conf.backup_name,
-                                    incremental=self.conf.incremental)
+            backup_meta = backup_os.backup_cinder(self.conf.cindernative_vol_id,
+                                                  name=self.conf.backup_name,
+                                                  incremental=self.conf.incremental)
+            return backup_meta
         elif backup_media == 'cinder':
             LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
                 self.conf.cinder_vol_id))
