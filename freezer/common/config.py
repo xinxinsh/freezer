@@ -121,6 +121,8 @@ DEFAULT_PARAMS = {
     'compression': 'gzip',
     'overwrite': False,
     'incremental': None,
+    'description':None,
+    'project':None,
     'consistency_check': False,
     'consistency_checksum': None,
     'nova_restore_network': None,
@@ -526,6 +528,12 @@ _COMMON = [
                      "cindernative incremental backup instead of the default "
                      "full backup. And if True, but volume do not have a base"
                      "full backup, freezer will do a full backup first"),
+    cfg.BoolOpt('description',
+                default=DEFAULT_PARAMS['description'],
+                help="the description of backup "),
+    cfg.BoolOpt('project',
+                default=DEFAULT_PARAMS['project'],
+                help="the project of backup "),
     cfg.StrOpt('nova-restore-network',
                dest='nova_restore_network',
                default=DEFAULT_PARAMS['nova_restore_network'],
