@@ -277,6 +277,13 @@ class BackupJob(Job):
             LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
                 self.conf.cinder_vol_id))
             backup_os.backup_cinder_by_glance(self.conf.cinder_vol_id)
+        elif backup_media == 'trove':
+            LOG.info('Executing trove backup. Instance ID: {0}, '
+                     'incremental: {1}'.format(self.conf.trove_instance_id,
+                                               self.conf.incremental))
+            backup_os.backup_trove(self.conf.trove_instance_id,
+                                   name=self.conf.backup_name,
+                                   incemental=self.conf.incemental)
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return None
@@ -361,6 +368,14 @@ class RestoreJob(Job):
                                conf.cindernative_backup_id,
                                conf.cindernative_dest_id,
                                restore_timestamp)
+        elif conf.backup_media == 'trove':
+            LOG.info("Restoring cinde backup. Instance ID {0}, Backup ID"
+                     " {1},  timestamp: {2}".format(conf.trove_instance_id,
+                                                    conf.trove_backup_id,
+                                                    restore_timestamp))
+            res.restore_trove(conf.trove_instance_id,
+                              conf.trove_backup_id,
+                              restore_from_timestamp)
         else:
             raise Exception("unknown backup type: %s" % conf.backup_media)
         return {}

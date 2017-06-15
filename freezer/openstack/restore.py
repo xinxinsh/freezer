@@ -193,6 +193,40 @@ class RestoreOs(object):
             backup_id = backup.id
         cinder.restores.restore(backup_id=backup_id, volume_id=dest_volume_id)
 
+    def restore_trove(self, instance=None,
+                       backup_id=None,
+                       restore_from_timestamp=None):
+        """
+        Restoring trove backup using
+        :param instance:
+        :param backup_id:
+        :param restore_from_timestamp:
+        :return:
+        """
+        backup = None
+        trove = self.client_manager.get_trove()
+
+        if not backup_id:
+            backups = trove.volume_backups.list(datastore=instance)
+
+            def get_backups_from_timestamp(backups, restore_from_timestamp):
+                for backup in backups:
+                    backup_created_date = backup.created_at.split('.')[0]
+                    backup_created_timestamp = utils.utc_to_local_timestamp(backup_created_date)
+                    if backup_created_timestamp >= restore_from_timestamp:
+                        yield backup
+
+            backups_filter = get_backups_from_timestamp(backups,
+                                                        restore_from_timestamp)
+            if not backups_filter:
+                LOG.warning("no available backups for trove instance,"
+                            "restore newest backup")
+                backup = max(backups, key=lambda x: x.created_at)
+            else:
+                backup = min(backups_filter, key=lambda x: x.created_at)
+            backup_id = backup.id
+        trove.volume_backups.restore(backup_id=backup_id)
+
     def restore_cinder_by_glance(self, volume_id, restore_from_timestamp):
         """
         1) Define swift directory

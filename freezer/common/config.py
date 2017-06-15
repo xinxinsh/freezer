@@ -84,6 +84,7 @@ DEFAULT_PARAMS = {
     'proxy': None,
     'cinder_vol_id': '',
     'cindernative_vol_id': '',
+    'trove_instance_id': '',
     'nova_inst_id': '',
     'backup_nova_name':'',
     'backup_flavor_id':'',
@@ -128,6 +129,7 @@ DEFAULT_PARAMS = {
     'nova_restore_network': None,
     'cindernative_backup_id': None,
     'cindernative_dest_id': None,
+    'trove_backup_id': None,
     'sync': True,
     'engine_name': 'tar'
 }
@@ -430,6 +432,16 @@ _COMMON = [
                default=DEFAULT_PARAMS['cindernative_dest_id'],
                dest='cindernative_dest_id',
                help="Destination volume id of the cindernative restore to"
+               ),
+    cfg.StrOpt('trove-instance-id',
+               dest='trove_instance_id',
+               default=DEFAULT_PARAMS['trove_instance_id'],
+               help="Id of trove volume for  backup"
+               ),
+    cfg.StrOpt('trove-backup-id',
+               default=DEFAULT_PARAMS['trove_backup_id'],
+               dest='trove_backup_id',
+               help="Id of the trove backup to be restored"
                ),
     cfg.StrOpt('nova-inst-id',
                dest='nova_inst_id',

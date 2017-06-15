@@ -164,3 +164,28 @@ class BackupOs(object):
                                                 incremental=incremental, force=True)
         backup_meta._info['backup_chain_name'] = meta['backup_chain_name']
         return backup_meta._info
+
+    def backup_trove(self, instance, name, description=None,
+                     incremental=True):
+
+        client_manager = self.client_manager
+        trove = client_manager.get_trove()
+        container = "{0}/{1}/{2}".format(self.container, instance,
+                                         utils.DateTime.now().timestamp)
+
+        if incremental:
+            backups = trove.volume_backups.list(datastore=instance)
+            if len(backups) <= 0:
+                msg = ("No backups exists for instance %s ."
+                       "Degrade to do a full backup before do incremental backup"
+                       % instance)
+                LOG.info(msg)
+                trove.volume_backups.create(instance, name,description,container,
+                                     incremental=Flase)
+            else:
+                trove.volume_backups.create(instance, name,description,container,
+                                     incremental=incremental)
+
+        else:
+            trove.volume_backups.create(instance, name, description, container,
+                                 incremental=incremental)

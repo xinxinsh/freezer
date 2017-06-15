@@ -18,6 +18,7 @@ import time
 
 from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
+from troveclient import client as trove_client
 from keystoneauth1 import loading
 from keystoneauth1 import session
 from novaclient import client as nova_client
@@ -38,6 +39,7 @@ class OSClientManager(object):
         self.glance = None
         self.nova = None
         self.cinder = None
+        self.trove = None
         self.dry_run = kwargs.pop('dry_run', None)
         loader = loading.get_plugin_loader(auth_method)
         # copy the args for swift authentication !
@@ -69,6 +71,7 @@ class OSClientManager(object):
         self.compute_version = kwargs.pop('compute_api_version', 2)
         self.image_version = kwargs.pop('image_api_version', 2)
         self.volume_version = kwargs.pop('volume_api_version', 2)
+        self.trove_version = kwargs.pop('trove_api_version', 1)
         self.auth = loader.load_from_options(auth_url=auth_url, **kwargs)
 
         self.sess = session.Session(auth=self.auth, **session_kwargs)
@@ -106,6 +109,16 @@ class OSClientManager(object):
                                            session=self.sess,
                                            **self.client_kwargs)
         return self.cinder
+
+    def create_trove(self):
+        """
+        Use pre-initialized session to create an instance of trove client.
+        :return: troveclient instance
+        """
+        self.trove = trove_client.Client(self.trove_version,
+                                         session=self.sess,
+                                         **self.client_kwargs)
+        return self.trove
 
     def create_swift(self):
         """
@@ -182,6 +195,15 @@ class OSClientManager(object):
         if not self.cinder:
             self.cinder = self.create_cinder()
         return self.cinder
+
+    def get_trove(self):
+        """
+        Get troveclient instance
+        :return: troveclient instance
+        """
+        if not self.trove:
+            self.trove = self.create_trove()
+        return self.trove
 
     def get_swift(self):
         """
@@ -322,7 +344,7 @@ class OpenstackOpts(object):
                  identity_api_version=None, project_id=None, project_name=None,
                  tenant_id=None, tenant_name=None, token=None, insecure=False,
                  endpoint_type='internalURL', interface=None,
-                 compute_api_version=2, image_api_version=2,
+                 compute_api_version=2, image_api_version=2,trove_api_version=1,
                  volume_api_version=2, user_domain_name=None, domain_id=None,
                  user_domain_id=None, project_domain_id=None, domain_name=None,
                  project_domain_name=None):
@@ -350,6 +372,7 @@ class OpenstackOpts(object):
         :param compute_api_version: int NOVA API version to use default 2
         :param image_api_version: int Glance API version, default 2
         :param volume_api_version: int Cinder API version, default 2
+        :param trove_api_version: int TROVE API version to use default 1
         :param user_domain_name: string User Domain Name. only with keystone v3
         :param domain_id: string Domain ID. Only with keystone v3
         :param user_domain_id: string User Domain ID. only with keystone v3
@@ -378,6 +401,7 @@ class OpenstackOpts(object):
         self.compute_api_version = compute_api_version
         self.image_api_version = image_api_version
         self.volume_api_version = volume_api_version
+        self.trove_api_version = trove_api_version
         self.user_domain_id = user_domain_id
         self.user_domain_name = user_domain_name
         self.project_domain_id = project_domain_id
@@ -490,6 +514,7 @@ class OpenstackOpts(object):
             compute_api_version=src_dict.get('OS_COMPUTE_API_VERSION', 2),
             volume_api_version=src_dict.get('OS_VOLUME_API_VERSION', 2),
             image_api_version=src_dict.get('OS_IMAGE_API_VERSION', 2)
+            trove_api_version=src_dict.get('OS_TROVE_API_VERSION', 1)
         )
 
 
