@@ -336,10 +336,11 @@ class RestoreJob(Job):
                                                    conf.cindernative_backup_id,
                                                    conf.cindernative_dest_id,
                                                    restore_timestamp))
-            res.restore_cinder(conf.cindernative_vol_id,
-                               conf.cindernative_backup_id,
-                               conf.cindernative_dest_id,
-                               restore_timestamp)
+            res.restore_cinder(volume_id=conf.cindernative_vol_id,
+                               backup_id=conf.cindernative_backup_id,
+                               dest_volume_id=conf.cindernative_dest_id,
+                               volume_type=conf.cindernative_volume_type,
+                               restore_from_timestamp=restore_timestamp)
         else:
             raise Exception("unknown backup type: %s" % conf.backup_media)
         return {}

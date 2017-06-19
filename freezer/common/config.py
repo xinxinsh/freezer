@@ -126,6 +126,7 @@ DEFAULT_PARAMS = {
     'nova_restore_network': None,
     'cindernative_backup_id': None,
     'cindernative_dest_id': None,
+    'cindernative_volume_type':None,
     'sync': True,
     'engine_name': 'tar'
 }
@@ -429,6 +430,12 @@ _COMMON = [
                dest='cindernative_dest_id',
                help="Destination volume id of the cindernative restore to"
                ),
+    cfg.StrOpt('cindernative-volume-type',
+               default=DEFAULT_PARAMS['cindernative_volume_type'],
+               dest='cindernative_volume_type',
+               help="Volume type of the cindernative restore created volume, "
+                    "which is incompatible with cindernative_dest_id, if cindernative_dest_id "
+                    "is specifed, this option will be ignored"),
     cfg.StrOpt('nova-inst-id',
                dest='nova_inst_id',
                default=DEFAULT_PARAMS['nova_inst_id'],

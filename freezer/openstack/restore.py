@@ -158,6 +158,7 @@ class RestoreOs(object):
     def restore_cinder(self, volume_id=None,
                        backup_id=None,
                        dest_volume_id=None,
+                       volume_type=None,
                        restore_from_timestamp=None):
         """
         Restoring cinder backup using
@@ -179,7 +180,7 @@ class RestoreOs(object):
                 for backup in backups:
                     backup_created_date = backup.created_at.split('.')[0]
                     backup_created_timestamp = utils.utc_to_local_timestamp(backup_created_date)
-                    if backup_created_timestamp >= restore_from_timestamp:
+                    if backup_created_timestamp <= restore_from_timestamp:
                         yield backup
 
             backups_filter = get_backups_from_timestamp(backups,
@@ -191,7 +192,8 @@ class RestoreOs(object):
             else:
                 backup = min(backups_filter, key=lambda x: x.created_at)
             backup_id = backup.id
-        cinder.restores.restore(backup_id=backup_id, volume_id=dest_volume_id)
+        cinder.restores.restore(backup_id=backup_id, volume_id=dest_volume_id,
+                                volume_type=volume_type)
 
     def restore_cinder_by_glance(self, volume_id, restore_from_timestamp):
         """
