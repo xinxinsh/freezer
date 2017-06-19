@@ -343,6 +343,10 @@ class RestoreJob(Job):
                 LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
                          .format(conf.nova_inst_id, restore_timestamp))
                 res.rollback_nova(conf.nova_inst_id, restore_timestamp)
+            elif conf.is_template:
+                LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
+                         .format(conf.nova_inst_id, restore_timestamp))
+                res.model_nova(conf.nova_inst_id, restore_timestamp)
             else:
                 LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
                         "network-id: {2}, backup-nova-name: {3}, "

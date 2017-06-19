@@ -347,3 +347,12 @@ class RestoreOs(object):
         utils.wait_for(instance_finish_task, 5, 300,
                        message="Wait for instance {0} to become active".format(instance_id))
         return
+
+    def model_nova(self, instance_id, restore_from_timestamp):
+        """
+        :param instance_id: id of attached nova instance
+        :param restore_from_timestamp:
+        :type restore_from_timestamp: int
+        :return:
+        """
+        return self._create_image(instance_id, restore_from_timestamp)

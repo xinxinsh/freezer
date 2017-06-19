@@ -92,6 +92,7 @@ DEFAULT_PARAMS = {
     'remove_older_than': None,
     'restore_from_date': None,
     'is_rollback': False,
+    'is_template': False,
     'upload_limit': -1,
     'always_level': False,
     'version': None,
@@ -366,6 +367,11 @@ _COMMON = [
                dest='is_rollback',
                default=DEFAULT_PARAMS['is_rollback'],
                help="Set this flag to True to rollback instance to "
+                    "specified backup, default is false"),
+    cfg.StrOpt('is-template',
+               dest='is_template',
+               default=DEFAULT_PARAMS['is_template'],
+               help="Set this flag to True to Create image with "
                     "specified backup, default is false"),
     cfg.StrOpt('max-priority',
                dest='max_priority',
