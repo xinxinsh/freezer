@@ -735,6 +735,8 @@ def get_backup_args():
         backup_media = 'cindernative'
     elif backup_args.nova_inst_id:
         backup_media = 'nova'
+    elif backup_args.trove_instance_id:
+        backup_media = 'trove'
 
     backup_args.__dict__['backup_media'] = backup_media
     backup_args.__dict__['time_stamp'] = None

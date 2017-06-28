@@ -135,7 +135,7 @@ def build_os_options():
                    help='Id containing project. Defaults to '
                         'env[OS_PROJECT_ID].',
                    dest='os_project_id'),
-        cfg.StrOpt('os_user_domain_id',
+        cfg.StrOpt('os-user-domain-id',
                    default=env('OS_USER_DOMAIN_ID'),
                    help='User\'s domain id. Defaults to '
                         'env[OS_USER_DOMAIN_ID].',

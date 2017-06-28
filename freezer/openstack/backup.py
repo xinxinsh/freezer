@@ -174,7 +174,7 @@ class BackupOs(object):
                                          utils.DateTime.now().timestamp)
 
         if incremental:
-            backups = trove.volume_backups.list(datastore=instance)
+            backups = trove.instances.volume_backups(instance)
             if len(backups) <= 0:
                 msg = ("No backups exists for instance %s ."
                        "Degrade to do a full backup before do incremental backup"

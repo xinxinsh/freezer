@@ -283,7 +283,7 @@ class BackupJob(Job):
                                                self.conf.incremental))
             backup_os.backup_trove(self.conf.trove_instance_id,
                                    name=self.conf.backup_name,
-                                   incemental=self.conf.incemental)
+                                   incremental=self.conf.incremental)
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return None
@@ -294,7 +294,8 @@ class RestoreJob(Job):
     def _validate(self):
         if not self.conf.restore_abs_path and not self.conf.nova_inst_id \
                 and not self.conf.cinder_vol_id and not \
-                self.conf.cindernative_vol_id:
+                self.conf.cindernative_vol_id and not \
+                self.conf.trove_instance_id:
             raise ValueError("--restore-abs-path is required")
         if not self.conf.container:
             raise ValueError("--container is required")

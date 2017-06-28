@@ -209,7 +209,7 @@ class RestoreOs(object):
         trove = self.client_manager.get_trove()
 
         if not backup_id:
-            backups = trove.volume_backups.list(datastore=instance)
+            backups = trove.instances.volume_backups(instance)
 
             def get_backups_from_timestamp(backups, restore_from_timestamp):
                 for backup in backups:
