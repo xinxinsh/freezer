@@ -209,11 +209,11 @@ class RestoreOs(object):
         trove = self.client_manager.get_trove()
 
         if not backup_id:
-            backups = trove.instances.volume_backups(instance)
+            backups = trove.instances.volume_backups(instance).items
 
             def get_backups_from_timestamp(backups, restore_from_timestamp):
                 for backup in backups:
-                    backup_created_date = backup.created_at.split('.')[0]
+                    backup_created_date = backup.created.split('.')[0]
                     backup_created_timestamp = utils.utc_to_local_timestamp(backup_created_date)
                     if backup_created_timestamp >= restore_from_timestamp:
                         yield backup
@@ -223,11 +223,11 @@ class RestoreOs(object):
             if not backups_filter:
                 LOG.warning("no available backups for trove instance,"
                             "restore newest backup")
-                backup = max(backups, key=lambda x: x.created_at)
+                backup = max(backups, key=lambda x: x.created)
             else:
-                backup = min(backups_filter, key=lambda x: x.created_at)
+                backup = min(backups_filter, key=lambda x: x.created)
             backup_id = backup.id
-        trove.volume_backups.restore(backup_id=backup_id)
+        trove.volume_backups.restore(backup=backup_id)
 
     def restore_cinder_by_glance(self, volume_id, restore_from_timestamp):
         """
