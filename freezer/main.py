@@ -19,7 +19,6 @@ Freezer main execution function
 
 import json
 import os
-import prettytable
 import subprocess
 import sys
 
@@ -45,7 +44,6 @@ LOG = log.getLogger(__name__)
 def freezer_main(backup_args):
     """Freezer main loop for job execution.
     """
-
     if not backup_args.quiet:
         LOG.info("Begin freezer agent process with args: {0}".format(sys.argv))
         LOG.info('log file at {0}'.format(CONF.get('log_file')))
@@ -132,29 +130,7 @@ def run_job(conf, storage):
     if not conf.quiet:
         LOG.info("End freezer agent process successfully")
 
-    if conf.metadata_out and response:
-        if conf.metadata_out == '-':
-            sys.stdout.write(json.dumps(response))
-            sys.stdout.flush()
-        else:
-            with open(conf.metadata_out, 'w') as outfile:
-                outfile.write(json.dumps(response))
-    elif response and isinstance(response, dict):
-        pp = prettytable.PrettyTable(["Property", "Value"])
-        for k, v in response.items():
-            k = k.replace("_", " ")
-            pp.add_row([k, v])
-        sys.stdout.writelines(pp.get_string())
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-    elif response and isinstance(response, list):
-        pp = prettytable.PrettyTable()
-        pp.field_names = response[0]
-        for i in response[1]:
-            pp.add_row(i)
-        print (pp)
-    else:
-        return
+    return utils.send_response(response, conf.metadata_out)
 
 
 def fail(exit_code, e, quiet, do_log=True):

@@ -44,7 +44,6 @@ class Job(object):
     :type storage: freezer.storage.base.Storage
     :type engine: freezer.engine.engine.BackupEngine
     """
-
     def __init__(self, conf_dict, storage):
         self.conf = conf_dict
         self.storage = storage
@@ -109,6 +108,30 @@ class InfoJob(Job):
 
 class BackupJob(Job):
 
+    META_FIELDS = ['action',
+                  'always_level',
+                  'backup_media',
+                  'backup_name',
+                  'hostname_backup_name',
+                  'container',
+                  'container_segments',
+                  'dry_run',
+                  'hostname',
+                  'path_to_backup',
+                  'max_level',
+                  'log_file',
+                  'storage',
+                  'mode',
+                  'os_auth_version',
+                  'proxy',
+                  'compression',
+                  'ssh_key',
+                  'ssh_username',
+                  'ssh_host',
+                  'ssh_port',
+                  'consistency_checksum'
+                 ]
+
     def _validate(self):
         if self.conf.mode == 'fs':
             if not self.conf.path_to_backup:
@@ -134,69 +157,34 @@ class BackupJob(Job):
                     LOG.error('Error while sync exec: {0}'.format(err))
         except Exception as error:
             LOG.error('Error while sync exec: {0}'.format(error))
+
         if not self.conf.mode:
             raise ValueError("Empty mode")
+
         mod_name = 'freezer.mode.{0}.{1}'.format(
             self.conf.mode, self.conf.mode.capitalize() + 'Mode')
         app_mode = importutils.import_object(mod_name, self.conf)
-
-        backup_level = None
-        backup_backend_meta = self.backup(app_mode)
-        level = backup_level or 0
-
-        if self.conf.mode == "nova":
-             source_id = self.conf.nova_inst_id
-             backup_chain_name = self.conf.backup_name
-        elif self.conf.mode == "cindernative" :
-             source_id = self.conf.cindernative_vol_id
-             backup_chain_name = backup_backend_meta['backup_chain_name']
-        else:
-             source_id = ''
-             backup_chain_name = ''
-
+        self.conf.time_stamp = utils.DateTime.now().timestamp
+        self.backup(app_mode)
         end_time_stamp = utils.DateTime.now().timestamp
 
         metadata = {
-            'curr_backup_level': level,
+            'curr_backup_level': 0,
             'fs_real_path': self.conf.path_to_backup,
             'vol_snap_path': self.conf.path_to_backup,
             'client_os': sys.platform,
-            'source_id':source_id,
-            'project_id':self.conf.project_id,
-            'description':self.conf.description,
+            'source_id': self.conf.__dict__.get('source_id'),
+            'project_id': self.conf.project_id,
+            'description': self.conf.description,
             'end_time_stamp': end_time_stamp,
-            'backup_chain_name':backup_chain_name,
-            'is_incremental':self.conf.incremental,
+            'backup_chain_name': self.conf.__dict__.get('backup_chain_name'),
+            'is_incremental': self.conf.incremental,
             'client_version': self.conf.__version__,
             'time_stamp': self.conf.time_stamp,
         }
-        fields = ['action',
-                  'always_level',
-                  'backup_media',
-                  'backup_name',
-                  'hostname_backup_name',
-                  'container',
-                  'container_segments',
-                  'dry_run',
-                  'hostname',
-                  'path_to_backup',
-                  'max_level',
-                  'mode',
-                  'time_stamp',
-                  'log_file',
-                  'storage',
-                  'mode',
-                  'os_auth_version',
-                  'proxy',
-                  'compression',
-                  'ssh_key',
-                  'ssh_username',
-                  'ssh_host',
-                  'ssh_port',
-                  'consistency_checksum'
-                  ]
-        for field_name in fields:
-            metadata[field_name] = self.conf.__dict__.get(field_name, '') or ''
+
+        for field in self.META_FIELDS:
+            metadata[field] = self.conf.__dict__.get(field)
         return metadata
 
     def backup(self, app_mode):
@@ -206,9 +194,6 @@ class BackupJob(Job):
         :return:
         """
         backup_media = self.conf.backup_media
-
-        time_stamp = utils.DateTime.now().timestamp
-        self.conf.time_stamp = time_stamp
 
         if backup_media == 'fs':
             LOG.info('Path to backup: {0}'.format(self.conf.path_to_backup))
@@ -260,9 +245,12 @@ class BackupJob(Job):
                                     self.conf.container,
                                     self.storage)
 
+        backup_meta = None
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
                 self.conf.nova_inst_id))
+            self.conf.__dict__['source_id'] = self.conf.nova_inst_id
+            self.conf.__dict__['backup_chain_name'] = self.conf.backup_name
             backup_os.backup_nova(self.conf.nova_inst_id,
                                   name=self.conf.backup_name)
         elif backup_media == 'cindernative':
@@ -272,7 +260,8 @@ class BackupJob(Job):
             backup_meta = backup_os.backup_cinder(self.conf.cindernative_vol_id,
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental)
-            return backup_meta
+            self.conf.__dict__['source_id'] = self.conf.cindernative_vol_id
+            self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
         elif backup_media == 'cinder':
             LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
                 self.conf.cinder_vol_id))
@@ -286,7 +275,7 @@ class BackupJob(Job):
                                    incremental=self.conf.incremental)
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
-        return None
+        return backup_meta
 
 
 class RestoreJob(Job):

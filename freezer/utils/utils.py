@@ -25,6 +25,8 @@ import subprocess
 import sys
 import time
 import six
+import prettytable
+import json
 
 from oslo_utils import encodeutils
 from distutils import spawn as distspawn
@@ -538,6 +540,7 @@ def convert_str(text):
         else:
             return text
 
+
 def wait_for(condition_func, wait_interval, timeout, message=None, kwargs={}):
     while timeout:
         if condition_func(**kwargs):
@@ -546,3 +549,29 @@ def wait_for(condition_func, wait_interval, timeout, message=None, kwargs={}):
         timeout -= wait_interval
 
     raise utils.TimeoutException(message)
+
+
+def send_response(response, stdout):
+    if stdout and response:
+        if stdout == '-':
+            sys.stdout.write(json.dumps(response))
+            sys.stdout.flush()
+        else:
+            with open(stdout, 'w') as outfile:
+                outfile.write(json.dumps(response))
+    elif response and isinstance(response, dict):
+        pp = prettytable.PrettyTable(["Property", "Value"])
+        for k, v in response.items():
+            k = k.replace("_", " ")
+            pp.add_row([k, v])
+        sys.stdout.writelines(pp.get_string())
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+    elif response and isinstance(response, list):
+        pp = prettytable.PrettyTable()
+        pp.field_names = response[0]
+        for i in response[1]:
+            pp.add_row(i)
+        print (pp)
+    else:
+        return
