@@ -29,8 +29,3 @@ class BackupOperationError(StorageException):
 class InvalidParameterValue(StorageException):
     message = _("%(err)s")
 
-class ConfException(StorageException):
-    message = _("Error Write Configuration")
-
-class SnapshotNotFound(StorageException):
-    message = _("Snapshot Not Found")
