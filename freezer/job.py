@@ -30,6 +30,7 @@ import six
 from freezer.openstack import backup
 from freezer.openstack import restore
 from freezer.snapshot import snapshot
+from freezer import utils as base_utils
 from freezer.utils import checksum
 from freezer.utils import exec_cmd
 from freezer.utils import utils
@@ -108,30 +109,6 @@ class InfoJob(Job):
 
 class BackupJob(Job):
 
-    META_FIELDS = ['action',
-                  'always_level',
-                  'backup_media',
-                  'backup_name',
-                  'hostname_backup_name',
-                  'container',
-                  'container_segments',
-                  'dry_run',
-                  'hostname',
-                  'path_to_backup',
-                  'max_level',
-                  'log_file',
-                  'storage',
-                  'mode',
-                  'os_auth_version',
-                  'proxy',
-                  'compression',
-                  'ssh_key',
-                  'ssh_username',
-                  'ssh_host',
-                  'ssh_port',
-                  'consistency_checksum'
-                 ]
-
     def _validate(self):
         if self.conf.mode == 'fs':
             if not self.conf.path_to_backup:
@@ -165,92 +142,54 @@ class BackupJob(Job):
             self.conf.mode, self.conf.mode.capitalize() + 'Mode')
         app_mode = importutils.import_object(mod_name, self.conf)
         self.conf.time_stamp = utils.DateTime.now().timestamp
-        self.backup(app_mode)
-        end_time_stamp = utils.DateTime.now().timestamp
 
-        metadata = {
+        kwargs = {
             'curr_backup_level': 0,
-            'fs_real_path': self.conf.path_to_backup,
-            'vol_snap_path': self.conf.path_to_backup,
             'client_os': sys.platform,
-            'source_id': self.conf.__dict__.get('source_id'),
             'project_id': self.conf.project_id,
             'description': self.conf.description,
-            'end_time_stamp': end_time_stamp,
-            'backup_chain_name': self.conf.__dict__.get('backup_chain_name'),
-            'is_incremental': self.conf.incremental,
             'client_version': self.conf.__version__,
             'time_stamp': self.conf.time_stamp,
+            'action': self.conf.action,
+            'always_level': self.conf.always_level,
+            'backup_name': self.conf.backup_name,
+            'hostname_backup_name': self.conf.hostname_backup_name,
+            'container': self.conf.container,
+            'hostname': self.conf.hostname,
+            'max_level': self.conf.max_level,
+            'storage': self.conf.storage,
+            'mode': self.conf.mode,
+            'status': base_utils.BackupStatus.CREATING,
+            'compression': self.conf.compression,
+            'consistency_checksum': self.conf.consistency_checksum,
         }
 
-        for field in self.META_FIELDS:
-            metadata[field] = self.conf.__dict__.get(field)
-        return metadata
+        backup = base_utils.Backup(self.conf.api_client, kwargs)
+        backup.create()
+        self.backup(app_mode, backup)
+        backup.status = base_utils.BackupStatus.AVAILABLE
+        backup.end_time_stamp = utils.DateTime.now().timestamp
+        backup.save()
 
-    def backup(self, app_mode):
+        return backup
+
+
+    def backup(self, app_mode, backup):
         """
-
         :type app_mode: freezer.mode.mode.Mode
         :return:
         """
         backup_media = self.conf.backup_media
-
-        if backup_media == 'fs':
-            LOG.info('Path to backup: {0}'.format(self.conf.path_to_backup))
-            app_mode.prepare()
-            snapshot_taken = snapshot.snapshot_create(self.conf)
-            if snapshot_taken:
-                app_mode.release()
-            try:
-                filepath = '.'
-                chdir_path = os.path.expanduser(
-                    os.path.normpath(self.conf.path_to_backup.strip()))
-                if not os.path.exists(chdir_path):
-                    msg = 'Path to backup does not exist {0}'.format(
-                        chdir_path)
-                    LOG.critical(msg)
-                    raise IOError(msg)
-                if not os.path.isdir(chdir_path):
-                    filepath = os.path.basename(chdir_path)
-                    chdir_path = os.path.dirname(chdir_path)
-                os.chdir(chdir_path)
-
-                # Checksum for Backup Consistency
-                if self.conf.consistency_check:
-                    ignorelinks = (self.conf.dereference_symlink == 'none' or
-                                   self.conf.dereference_symlink == 'hard')
-                    consistency_checksum = checksum.CheckSum(
-                        filepath, ignorelinks=ignorelinks).compute()
-                    LOG.info('Computed checksum for consistency {0}'.
-                             format(consistency_checksum))
-                    self.conf.consistency_checksum = consistency_checksum
-
-                return self.engine.backup(
-                    backup_path=filepath,
-                    hostname_backup_name=self.conf.hostname_backup_name,
-                    no_incremental=self.conf.no_incremental,
-                    max_level=self.conf.max_level,
-                    always_level=self.conf.always_level,
-                    restart_always_level=self.conf.restart_always_level)
-
-            finally:
-                # whether an error occurred or not, remove the snapshot anyway
-                app_mode.release()
-                if snapshot_taken:
-                    snapshot.snapshot_remove(
-                        self.conf, self.conf.shadow,
-                        self.conf.windows_volume)
-
         backup_os = backup.BackupOs(self.conf.client_manager,
                                     self.conf.container,
                                     self.storage)
-
         backup_meta = None
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
                 self.conf.nova_inst_id))
-            self.conf.__dict__['source_id'] = self.conf.nova_inst_id
-            self.conf.__dict__['backup_chain_name'] = self.conf.backup_name
+            backup.source_id = self.conf.nova_inst_id
+            backup.backup_chain_name = self.conf.backup_name
+            backup.save()
             backup_os.backup_nova(self.conf.nova_inst_id,
                                   name=self.conf.backup_name)
         elif backup_media == 'cindernative':
@@ -260,8 +199,9 @@ class BackupJob(Job):
             backup_meta = backup_os.backup_cinder(self.conf.cindernative_vol_id,
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental)
-            self.conf.__dict__['source_id'] = self.conf.cindernative_vol_id
-            self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
+            backup.source_id = self.conf.cindernative_vol_id
+            backup.backup_chain_name = backup_meta['backup_chain_name']
+            backup.save()
         elif backup_media == 'cinder':
             LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
                 self.conf.cinder_vol_id))
@@ -302,30 +242,6 @@ class RestoreJob(Job):
         restore_abs_path = conf.restore_abs_path
         if conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(conf.restore_from_date)
-        if conf.backup_media == 'fs':
-            self.engine.restore(
-                hostname_backup_name=self.conf.hostname_backup_name,
-                restore_path=restore_abs_path,
-                overwrite=conf.overwrite,
-                recent_to_date=restore_timestamp)
-
-            try:
-                if conf.consistency_checksum:
-                    backup_checksum = conf.consistency_checksum
-                    restore_checksum = checksum.CheckSum(restore_abs_path,
-                                                         ignorelinks=True)
-                    if restore_checksum.compare(backup_checksum):
-                        LOG.info('Consistency check success.')
-                    else:
-                        raise ConsistencyCheckException(
-                            "Backup Consistency Check failed: backup checksum "
-                            "({0}) and restore checksum ({1}) did not match.".
-                            format(backup_checksum, restore_checksum.checksum))
-            except OSError as e:
-                raise ConsistencyCheckException(
-                    "Backup Consistency Check failed: could not checksum file"
-                    " {0} ({1})".format(e.filename, e.strerror))
-            return {}
         res = restore.RestoreOs(conf.client_manager, conf.container,
                                 self.storage)
         if conf.backup_media == 'nova':

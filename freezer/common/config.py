@@ -120,7 +120,7 @@ DEFAULT_PARAMS = {
     'ssh_username': '',
     'ssh_host': '',
     'ssh_port': DEFAULT_SSH_PORT,
-    'compression': 'gzip',
+    'compression': None,
     'overwrite': False,
     'incremental': None,
     'description':None,
