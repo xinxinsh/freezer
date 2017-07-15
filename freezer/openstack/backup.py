@@ -108,25 +108,7 @@ class BackupOs(object):
                        message="Wait for instance {0} to finish {1} to start snapshot "
                                "process".format(instance_id,
                                                 instance.__dict__['OS-EXT-STS:task_state']))
-        # this is should get from nova, for test we just assign a default value
-        connection_info = {
-            'driver_volume_type': 'rbd',
-            'data': {
-                'name': 'volumes/86ad80c4-4337-48f8-980e-224a9ebadb06_disk',
-                'hosts': ['10.21.1.82', '10.21.1.83', '10.21.1.84'],
-                'ports': ['6789', '6789', '6789'],
-                'cluster_name': 'ceph',
-                'auth_enabled': True,
-                'auth_username': 'volumes',
-                'secret_type': 'ceph',
-                'secret_uuid': '81cc0d15-d09f-4526-afde-23debc9490fb',
-            }
-        }
-        keyring_path = ("/etc/ceph/%s.client.%s.keyring" %
-                                ("ceph", "volumes"))
-        with open(keyring_path, 'r') as keyring_file:
-            keyring = keyring_file.read()
-        connection_info['data']['keyring'] = keyring
+        connection_info = nova.servers.connection_info(instance_id)._info
 
         headers = {"x-object-meta-name": instance.name,
                    "x-object-backup-name": name,
