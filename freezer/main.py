@@ -153,7 +153,7 @@ def parse_osrc(file_name):
 def get_client_manager(backup_args):
     if "osrc" in backup_args:
         options = osclients.OpenstackOpts.create_from_dict(
-            parse_osrc(backup_args['osrc']))
+            parse_osrc(backup_args['osrc'])).get_opts_dicts()
     else:
         options = osclients.OpenstackOpts.create_from_env().get_opts_dicts()
 
