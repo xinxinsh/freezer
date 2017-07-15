@@ -157,12 +157,28 @@ def get_client_manager(backup_args):
     else:
         options = osclients.OpenstackOpts.create_from_env().get_opts_dicts()
 
-    client_manager = osclients.OSClientManager(
-        auth_url=options.pop('auth_url', None),
-        auth_method=options.pop('auth_method', 'password'),
-        dry_run=backup_args.get('dry_run', None),
-        **options
-    )
+    if "os_token" in backup_args:
+        options.pop('username', None)
+        options.pop('password', None)
+        options.pop('user_domain_name', None)
+        options['auth_method'] = 'token'
+        options['project_id']= backup_args.get('os_project_id', None)
+        client_manager = osclients.OSClientManager(
+            auth_url=options.pop('auth_url', None),
+            token=backup_args.get('os_token', None),
+            auth_method=options.pop('auth_method', 'token'),
+            dry_run=backup_args.get('dry_run', None),
+            **options
+        )
+
+    else:
+        client_manager = osclients.OSClientManager(
+            auth_url=options.pop('auth_url', None),
+            dry_run=backup_args.get('dry_run', None),
+            auth_method=options.pop('auth_method', 'password'),
+            **options
+        )
+
     return client_manager
 
 
