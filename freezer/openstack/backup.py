@@ -39,7 +39,7 @@ class BackupOs(object):
         self.container = container
         self.storage = storage
 
-    def backup_nova(self, instance_id, name=None):
+    def backup_nova(self, instance_id, name=None, backup=None):
         """
         Implement nova backup
         :param instance_id: Id of the instance for backup
@@ -131,7 +131,7 @@ class BackupOs(object):
         client_manager.get_glance().images.delete(image.id)
 
     def backup_cinder(self, volume_id, name=None, description=None,
-                      incremental=True):
+                      incremental=True, backup=None):
         client_manager = self.client_manager
         cinder = client_manager.get_cinder()
         container = "{0}/{1}/{2}".format(self.container, volume_id,
@@ -148,6 +148,11 @@ class BackupOs(object):
                        % volume_id)
                 incremental = False
 
+        if backup is not None:
+            backup.source_id = volume_id
+            backup.is_incremental = incremental
+            backup.save()
+
         if incremental:
             backup_meta = cinder.backups.create(volume_id, container, name, description,
                                                 incremental=True, force=True)
@@ -160,7 +165,7 @@ class BackupOs(object):
         return backup_meta._info
 
     def backup_trove(self, instance, name, description=None,
-                     incremental=True):
+                     incremental=True, backup=None):
 
         client_manager = self.client_manager
         trove = client_manager.get_trove()
@@ -174,12 +179,15 @@ class BackupOs(object):
                        "Degrade to do a full backup before do incremental backup"
                        % instance)
                 LOG.info(msg)
-                trove.volume_backups.create(instance, name,description,container,
-                                     incremental=False)
-            else:
-                trove.volume_backups.create(instance, name,description,container,
-                                     incremental=incremental)
+                incremental = False
 
+        if backup is not None:
+            backup.is_incremental = incremental
+            backup.save()
+
+        if incremental:
+            trove.volume_backups.create(instance, name, description, container,
+                                        incremental=True)
         else:
             trove.volume_backups.create(instance, name, description, container,
-                                 incremental=incremental)
+                                 incremental=False)

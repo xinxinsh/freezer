@@ -110,14 +110,7 @@ class InfoJob(Job):
 class BackupJob(Job):
 
     def _validate(self):
-        if self.conf.mode == 'fs':
-            if not self.conf.path_to_backup:
-                raise ValueError('path-to-backup argument must be provided')
-            if self.conf.no_incremental and (self.conf.max_level or
-                                             self.conf.always_level):
-                raise Exception(
-                    'no-incremental option is not compatible '
-                    'with backup level options')
+        pass
 
     def execute(self):
         LOG.info('Backup job started. '
@@ -126,15 +119,6 @@ class BackupJob(Job):
                  .format(self.conf.backup_name, self.conf.container,
                          self.conf.hostname, self.conf.mode, self.conf.storage,
                          self.conf.compression))
-        try:
-            if self.conf.mode is 'fs' and self.conf.sync:
-                LOG.info('Executing sync to flush the file system buffer.')
-                (out, err) = utils.create_subprocess('sync')
-                if err:
-                    LOG.error('Error while sync exec: {0}'.format(err))
-        except Exception as error:
-            LOG.error('Error while sync exec: {0}'.format(error))
-
         if not self.conf.mode:
             raise ValueError("Empty mode")
 
@@ -166,8 +150,20 @@ class BackupJob(Job):
 
         backup = base_utils.Backup(self.conf.api_client, kwargs)
         backup.create()
-        self.backup(app_mode, backup)
+        try:
+            self.backup(app_mode, backup)
+        except Exception as e:
+            LOG.error('Executing {0} backup failed'.format(
+                self.conf.backup_media))
+            LOG.exception(e)
+
+            backup.status = base_utils.BackupStatus.ERROR
+            backup.backup_chain_name = self.conf.get('backup_chain_name')
+            backup.end_time_stamp = utils.DateTime.now().timestamp
+            backup.save()
+
         backup.status = base_utils.BackupStatus.AVAILABLE
+        backup.backup_chain_name = self.conf.get('backup_chain_name')
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
@@ -187,21 +183,19 @@ class BackupJob(Job):
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
                 self.conf.nova_inst_id))
-            backup.source_id = self.conf.nova_inst_id
-            backup.backup_chain_name = self.conf.backup_name
-            backup.save()
             backup_os.backup_nova(self.conf.nova_inst_id,
-                                  name=self.conf.backup_name)
+                                  name=self.conf.backup_name,
+                                  backup=backup)
+            self.conf.__dict__['backup_chain_name'] = self.conf.backup_name
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
                                                self.conf.incremental))
             backup_meta = backup_os.backup_cinder(self.conf.cindernative_vol_id,
                                                   name=self.conf.backup_name,
-                                                  incremental=self.conf.incremental)
-            backup.source_id = self.conf.cindernative_vol_id
-            backup.backup_chain_name = backup_meta['backup_chain_name']
-            backup.save()
+                                                  incremental=self.conf.incremental,
+                                                  backup=backup)
+            self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
         elif backup_media == 'cinder':
             LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
                 self.conf.cinder_vol_id))
@@ -212,7 +206,8 @@ class BackupJob(Job):
                                                self.conf.incremental))
             backup_os.backup_trove(self.conf.trove_instance_id,
                                    name=self.conf.backup_name,
-                                   incremental=self.conf.incremental)
+                                   incremental=self.conf.incremental,
+                                   backup=backup)
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return backup_meta
