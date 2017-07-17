@@ -71,6 +71,7 @@ DEFAULT_PARAMS = {
     'lvm_dirmount': None,
     'dereference_symlink': None,
     'config': None,
+    'osrc': '/root/admin-openrc',
     'mysql_conf': False,
     'insecure': False,
     'lvm_snapname': None,
@@ -392,13 +393,6 @@ _COMMON = [
                 default=DEFAULT_PARAMS['insecure'],
                 help='Allow to access swift servers without checking SSL '
                      'certs.'),
-    cfg.StrOpt('os-identity-api-version',
-               deprecated_name='os-auth-ver',
-               default=DEFAULT_PARAMS['os_identity_api_version'],
-               dest='os_identity_api_version',
-               choices=['1', '2', '2.0', '3'],
-               help="Openstack identity api version, can be 1, 2, 2.0 or 3"
-               ),
     cfg.StrOpt('proxy',
                dest='proxy',
                default=DEFAULT_PARAMS['proxy'],

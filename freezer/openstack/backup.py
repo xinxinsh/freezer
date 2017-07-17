@@ -50,43 +50,21 @@ class BackupOs(object):
         client_manager = self.client_manager
         nova = client_manager.get_nova()
         instance = nova.servers.get(instance_id)
-        glance = client_manager.get_glance()
 
-        def instance_finish_task():
-            instance = nova.servers.get(instance_id)
-            return not instance.__dict__['OS-EXT-STS:task_state']
+        connection_info = nova.servers.connection_info(instance_id)._info
 
-        utils.wait_for(instance_finish_task, 5, 300,
-                       message="Wait for instance {0} to finish {1} to start snapshot "
-                               "process".format(instance_id,
-                                                instance.__dict__['OS-EXT-STS:task_state']))
-
-        image_id = nova.servers.create_image(instance,
-                                             "snapshot_of_%s" % instance_id)
-        def image_active():
-            image = glance.images.get(image_id)
-            return image.status == 'active'
-
-        utils.wait_for(image_active, 5, 300,
-                       message="Wait for instance {0} "
-                                "snapshot {1} to become active".format(instance_id, image_id))
-        try:
-            image = glance.images.get(image_id)
-        except Exception as e:
-            LOG.error(e)
-
-        stream = client_manager.download_image(image, self.storage.max_segment_size)
-        package = "{0}/{1}".format(instance_id, utils.DateTime.now().timestamp)
-        if self.storage.type == "ceph":
-            package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
-        LOG.info("Uploading image to %s", self.storage.type)
+        nova.servers.update_task(instance_id, 'image_backuping')
         headers = {"x-object-meta-name": instance.name,
                    "x-object-backup-name": name,
-                   "x-object-meta-flavor-id": str(instance.flavor.get('id')),
-                   'x-object-meta-length': str(len(stream))}
-        self.storage.add_stream(stream, package, headers)
-        LOG.info("Deleting temporary image {0}".format(image))
-        glance.images.delete(image.id)
+                   "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
+        if self.storage.type == 'ceph' and connection_info['driver_volume_type'] == 'rbd':
+            package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
+            self.storage.backup(connection_info, package, headers)
+        else:
+            # should do full backup
+            pass
+        nova.servers.update_task(instance_id, None, 'image_backuping')
+            
 
     def backup_cinder_by_glance(self, volume_id):
         """

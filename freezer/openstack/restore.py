@@ -60,6 +60,9 @@ class RestoreOs(object):
                    " Try local, swift or ssh".format(self.storage.type))
             print(msg)
             raise BaseException(msg)
+
+        if not restore_from_timestamp:
+            restore_from_timestamp = backups[-1]
         backups = list(filter(lambda x: x <= restore_from_timestamp, backups))
         if not backups:
             msg = "Cannot find backups for path: %s" % path
@@ -78,8 +81,8 @@ class RestoreOs(object):
         glance = self.client_manager.get_glance()
         backup = self._get_backups(path, restore_from_timestamp)
         if self.storage.type == 'ceph':
+            info = self.storage.get_header(path, backup)
             path = "{0}_{1}".format(path, backup)
-            info = self.storage.get_header(path)
             images = list(glance.images.list(filters=
                                              {"name":"restore_{}".format(info['X-Object-Manifest'])}))
             if images and images[0]['status'] == 'active':
