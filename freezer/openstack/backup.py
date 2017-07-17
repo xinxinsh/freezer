@@ -100,16 +100,9 @@ class BackupOs(object):
         nova = client_manager.get_nova()
         instance = nova.servers.get(instance_id)
 
-        def instance_finish_task():
-            instance = nova.servers.get(instance_id)
-            return not instance.__dict__['OS-EXT-STS:task_state']
-
-        utils.wait_for(instance_finish_task, 5, 300,
-                       message="Wait for instance {0} to finish {1} to start snapshot "
-                               "process".format(instance_id,
-                                                instance.__dict__['OS-EXT-STS:task_state']))
         connection_info = nova.servers.connection_info(instance_id)._info
 
+        nova.servers.update_task(instance_id, 'image_backuping')
         headers = {"x-object-meta-name": instance.name,
                    "x-object-backup-name": name,
                    "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
@@ -119,6 +112,7 @@ class BackupOs(object):
         else:
             # should do full backup
             pass
+        nova.servers.update_task(instance_id, None, 'image_backuping')
             
 
     def backup_cinder_by_glance(self, volume_id):
