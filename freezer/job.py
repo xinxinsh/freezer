@@ -181,11 +181,11 @@ class BackupJob(Job):
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
                 self.conf.nova_inst_id))
-            backup_os.backup_nova(self.conf.nova_inst_id,
-                                  name=self.conf.backup_name,
-                                  backup=backup)
-            #dummy value, pls revise it properly
-            self.conf.__dict__['backup_chain_name'] = self.conf.backup_name
+            backup_meta = backup_os.backup_nova(self.conf.nova_inst_id,
+                                                name=self.conf.backup_name,
+                                                incremental=self.conf.incremental,
+                                                backup=backup)
+            self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
         elif backup_media == 'cindernative' or backup_media == 'cinder':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
