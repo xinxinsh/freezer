@@ -16,6 +16,7 @@ import sys
 import socket
 import six
 
+from oslo_config import cfg
 from oslo_log import log
 from oslo_utils import excutils
 from oslo_versionedobjects._i18n import _, _LE
@@ -23,9 +24,20 @@ from oslo_versionedobjects import exception
 from oslo_versionedobjects import fields
 
 from freezer import __version__ as FREEZER_VERSIO
+from freezerclient.v1 import client
 
 Enum = fields.Enum
 LOG = log.getLogger(__name__)
+CONF = cfg.CONF
+
+
+def api_client():
+    """dummy implementation"""
+    api = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
+    if CONF.client_id:
+        api.client_id = CONF.client_id
+    return api
+
 
 class BackupStatus(Enum):
     ERROR = 'error'
@@ -72,7 +84,6 @@ def _make_class_properties(cls):
 
 
 class Backup(object):
-
     fields = {
         'backend_id': fields.UUIDField(nullable=True),
         'curr_backup_level': fields.IntegerField(default=0),
@@ -99,9 +110,8 @@ class Backup(object):
         'consistency_checksum': fields.StringField(nullable=True),
     }
 
-    def __init__(self, api_client, **kwargs):
+    def __init__(self, **kwargs):
         self._changed_fields = set()
-        self.api_client = api_client
         self.backup_id = None
 
         _make_class_properties(self)
@@ -136,20 +146,44 @@ class Backup(object):
             raise exception.ObjectActionError(action='create',
                                               reason='already created')
         updates = self.get_changes()
-        id = self.api_client.backups.create(updates)
-        self.backup_id = id
+        backup_id = api_client().backups.create(updates)
+        self.backup_id = backup_id
 
         self.reset_changes()
 
     def save(self):
         updates = self.get_changes()
         if updates:
-            self.api_client.backups.update(self.backup_id, updates)
+            api_client().backups.update(self.backup_id, updates)
 
         self.reset_changes()
 
     def destroy(self):
-        self.api_client.backups.delete(self.backup_id)
+        api_client().backups.delete(self.backup_id)
+
+    def to_primitive(self):
+        primitive = dict()
+        for name, field in self.fields.items():
+            primitive[name] = field.primitive(self, name,
+                                              getattr(self, name))
+        return primitive
+
+    @staticmethod
+    def _from_db_backup(backup, db_backup):
+        for name, field in backup.fields.items():
+            value = db_backup.get(name)
+            if isinstance(field, fields.IntegerField):
+                value = value if value is not None else 0
+            backup[name] = value
+
+        backup.backup_id = db_backup.get('backup_id')
+        backup.reset_changes()
+        return backup
+
+    @classmethod
+    def get_by_id(cls, backup_id):
+        db_backup = api_client().get(backup_id)
+        return cls._from_db_backup(cls(), db_backup)
 
 
 

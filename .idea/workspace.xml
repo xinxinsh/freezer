@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/freezer/utils/backup.py" line="76" mnemonic="9" />
+    <bookmark url="file://$PROJECT_DIR$/freezer/utils/backup.py" line="87" mnemonic="9" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d51f94d3-2b6d-4b60-8415-4b27c6045e1f" name="Default" comment="">
       <change type="DELETED" beforePath="$PROJECT_DIR$/../freezer-api/bindep.txt" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/common/config.py" afterPath="$PROJECT_DIR$/freezer/common/config.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/job.py" afterPath="$PROJECT_DIR$/freezer/job.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/main.py" afterPath="$PROJECT_DIR$/freezer/main.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/openstack/backup.py" afterPath="$PROJECT_DIR$/freezer/openstack/backup.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/openstack/restore.py" afterPath="$PROJECT_DIR$/freezer/openstack/restore.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/scheduler/scheduler_job.py" afterPath="$PROJECT_DIR$/freezer/scheduler/scheduler_job.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/storage/ceph.py" afterPath="$PROJECT_DIR$/freezer/storage/ceph.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/storage/exceptions.py" afterPath="$PROJECT_DIR$/freezer/storage/exceptions.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/utils/backup.py" afterPath="$PROJECT_DIR$/freezer/utils/backup.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/utils/utils.py" afterPath="$PROJECT_DIR$/freezer/utils/utils.py" />
     </list>
     <ignored path="freezer.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -37,8 +35,8 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2033">
-              <caret line="141" column="26" selection-start-line="141" selection-start-column="26" selection-end-line="141" selection-end-column="26" />
+            <state relative-caret-position="-3541">
+              <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -47,8 +45,8 @@
       <file leaf-file-name="job.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/job.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="380">
-              <caret line="199" column="45" selection-start-line="199" selection-start-column="45" selection-end-line="199" selection-end-column="45" />
+            <state relative-caret-position="297">
+              <caret line="140" column="64" selection-start-line="140" selection-start-column="64" selection-end-line="140" selection-end-column="64" />
               <folding>
                 <element signature="e#670#680#0" expanded="true" />
               </folding>
@@ -56,41 +54,31 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="backup.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
+      <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="266">
-              <caret line="45" column="40" selection-start-line="45" selection-start-column="40" selection-end-line="45" selection-end-column="40" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="nova.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/freezer/mode/nova.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="323">
-              <caret line="17" column="14" selection-start-line="17" selection-start-column="6" selection-end-line="17" selection-end-column="14" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="osclients.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/freezer/openstack/osclients.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="734">
-              <caret line="261" column="29" selection-start-line="261" selection-start-column="20" selection-end-line="261" selection-end-column="29" />
+            <state relative-caret-position="355">
+              <caret line="555" column="29" selection-start-line="555" selection-start-column="29" selection-end-line="555" selection-end-column="29" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
       <file leaf-file-name="backup.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="715">
+              <caret line="70" column="32" selection-start-line="70" selection-start-column="21" selection-end-line="70" selection-end-column="32" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="backup.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="487">
-              <caret line="30" column="9" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="9" />
+            <state relative-caret-position="639">
+              <caret line="34" column="7" selection-start-line="34" selection-start-column="7" selection-end-line="34" selection-end-column="7" />
               <folding>
                 <element signature="e#619#629#0" expanded="true" />
               </folding>
@@ -125,16 +113,16 @@
         <option value="$PROJECT_DIR$/freezer/openstack/osclients.py" />
         <option value="$PROJECT_DIR$/freezer/scheduler/arguments.py" />
         <option value="$PROJECT_DIR$/freezer/openstack/restore.py" />
-        <option value="$PROJECT_DIR$/freezer/utils/utils.py" />
-        <option value="$PROJECT_DIR$/freezer/main.py" />
         <option value="$PROJECT_DIR$/freezer/common/config.py" />
-        <option value="$PROJECT_DIR$/freezer/utils/backup.py" />
         <option value="$PROJECT_DIR$/../freezer-client/freezerclient/v1/managers/backups.py" />
         <option value="$PROJECT_DIR$/../freezer-api/freezer_api/api/v1/backups.py" />
         <option value="$PROJECT_DIR$/../freezer-api/freezer_api/storage/elastic.py" />
         <option value="$PROJECT_DIR$/../freezer-api/freezer_api/common/utils.py" />
-        <option value="$PROJECT_DIR$/freezer/job.py" />
         <option value="$PROJECT_DIR$/freezer/openstack/backup.py" />
+        <option value="$PROJECT_DIR$/freezer/job.py" />
+        <option value="$PROJECT_DIR$/freezer/utils/utils.py" />
+        <option value="$PROJECT_DIR$/freezer/main.py" />
+        <option value="$PROJECT_DIR$/freezer/utils/backup.py" />
       </list>
     </option>
   </component>
@@ -205,6 +193,70 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="External Libraries" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer-client" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer-client" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezerclient" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer-client" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezerclient" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="v1" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer-client" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezerclient" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="v1" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="managers" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -288,6 +340,24 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="mode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="freezer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="common" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -668,6 +738,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="289">
           <caret line="2812" column="8" selection-start-line="2812" selection-start-column="8" selection-end-line="2812" selection-end-column="8" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -729,13 +800,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="384">
           <caret line="326" column="42" selection-start-line="326" selection-start-column="42" selection-end-line="326" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../freezer-client/freezerclient/v1/client.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="621">
-          <caret line="154" column="40" selection-start-line="154" selection-start-column="40" selection-end-line="154" selection-end-column="40" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -765,24 +830,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2002">
           <caret line="47" column="38" selection-start-line="47" selection-start-column="38" selection-end-line="47" selection-end-column="38" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="491">
-          <caret line="123" column="23" selection-start-line="123" selection-start-column="23" selection-end-line="123" selection-end-column="23" />
-          <folding>
-            <element signature="e#683#720#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/utils/utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="190">
-          <caret line="25" column="11" selection-start-line="25" selection-start-column="11" selection-end-line="25" selection-end-column="11" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -870,6 +917,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="42">
           <caret line="38" column="45" selection-start-line="38" selection-start-column="45" selection-end-line="38" selection-end-column="45" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -902,22 +950,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../freezer-client/freezerclient/v1/managers/backups.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="137">
-          <caret line="30" column="37" selection-start-line="30" selection-start-column="37" selection-end-line="30" selection-end-column="37" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/mode/nova.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="323">
-          <caret line="17" column="14" selection-start-line="17" selection-start-column="6" selection-end-line="17" selection-end-column="14" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/freezer/mode/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -942,47 +974,89 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/main.py">
+    <entry file="file://$PROJECT_DIR$/freezer/openstack/osclients.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2033">
-          <caret line="141" column="26" selection-start-line="141" selection-start-column="26" selection-end-line="141" selection-end-column="26" />
+        <state relative-caret-position="2957">
+          <caret line="240" column="56" selection-start-line="240" selection-start-column="56" selection-end-line="240" selection-end-column="56" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
+    <entry file="file://$PROJECT_DIR$/freezer/mode/nova.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="487">
-          <caret line="30" column="9" selection-start-line="30" selection-start-column="4" selection-end-line="30" selection-end-column="9" />
+        <state relative-caret-position="209">
+          <caret line="11" column="53" selection-start-line="11" selection-start-column="53" selection-end-line="11" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="355">
+          <caret line="555" column="29" selection-start-line="555" selection-start-column="29" selection-end-line="555" selection-end-column="29" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="715">
+          <caret line="70" column="32" selection-start-line="70" selection-start-column="21" selection-end-line="70" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../freezer-client/freezerclient/v1/client.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="335">
+          <caret line="174" column="35" selection-start-line="174" selection-start-column="28" selection-end-line="174" selection-end-column="35" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../freezer-client/freezerclient/v1/managers/backups.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="42">
+          <caret line="46" column="55" selection-start-line="46" selection-start-column="55" selection-end-line="46" selection-end-column="55" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/utils/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-665">
+          <caret line="37" column="0" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
           <folding>
-            <element signature="e#619#629#0" expanded="true" />
+            <element signature="e#666#677#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/openstack/osclients.py">
+    <entry file="file://$PROJECT_DIR$/freezer/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="734">
-          <caret line="261" column="29" selection-start-line="261" selection-start-column="20" selection-end-line="261" selection-end-column="29" />
+        <state relative-caret-position="-3541">
+          <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/job.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="380">
-          <caret line="199" column="45" selection-start-line="199" selection-start-column="45" selection-end-line="199" selection-end-column="45" />
+        <state relative-caret-position="297">
+          <caret line="140" column="64" selection-start-line="140" selection-start-column="64" selection-end-line="140" selection-end-column="64" />
           <folding>
             <element signature="e#670#680#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
+    <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="266">
-          <caret line="45" column="40" selection-start-line="45" selection-start-column="40" selection-end-line="45" selection-end-column="40" />
-          <folding />
+        <state relative-caret-position="639">
+          <caret line="34" column="7" selection-start-line="34" selection-start-column="7" selection-end-line="34" selection-end-column="7" />
+          <folding>
+            <element signature="e#619#629#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

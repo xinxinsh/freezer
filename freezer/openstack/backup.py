@@ -52,6 +52,11 @@ class BackupOs(object):
         instance = nova.servers.get(instance_id)
 
         connection_info = nova.servers.connection_info(instance_id)._info
+        if backup is not None:
+            backup.source_id = instance_id
+            #dummy value, pls, revise this value properly
+            backup.is_incremental = False
+            backup.save()
 
         nova.servers.update_task(instance_id, 'image_backuping')
         headers = {"x-object-meta-name": instance.name,
@@ -64,49 +69,7 @@ class BackupOs(object):
             # should do full backup
             pass
         nova.servers.update_task(instance_id, None, 'image_backuping')
-            
 
-    def backup_cinder_by_glance(self, volume_id):
-        """
-        Implements cinder backup:
-            1) Gets a stream of the image from glance
-            2) Stores resulted image to the swift as multipart object
-
-        :param volume_id: id of volume for backup
-        """
-        client_manager = self.client_manager
-        cinder = client_manager.get_cinder()
-
-        volume = cinder.volumes.get(volume_id)
-        LOG.debug("Creation temporary snapshot")
-        snapshot = client_manager.provide_snapshot(
-            volume, "backup_snapshot_for_volume_%s" % volume_id)
-        LOG.debug("Creation temporary volume")
-        copied_volume = client_manager.do_copy_volume(snapshot)
-        LOG.debug("Creation temporary glance image")
-        image = client_manager.make_glance_image(copied_volume.id,
-                                                 copied_volume)
-        LOG.debug("Download temporary glance image {0}".format(image.id))
-        stream = client_manager.download_image(image, self.storage.max_segment_size)
-        package = "{0}/{1}".format(volume_id, utils.DateTime.now().timestamp)
-        if self.storage.type == "ceph":
-            package = "{0}_{1}".format(volume_id, utils.DateTime.now().timestamp)
-        LOG.debug("Uploading image to %s", self.storage.type)
-        headers = {'x-object-meta-length': str(len(stream)),
-                   'volume_name': volume.name,
-                   'volume_type': volume.volume_type,
-                   'availability_zone': volume.availability_zone
-                   }
-        attachments = volume._info['attachments']
-        if attachments:
-            headers['server'] = attachments[0]['server_id']
-        self.storage.add_stream(stream, package, headers=headers)
-        LOG.debug("Deleting temporary snapshot")
-        client_manager.clean_snapshot(snapshot)
-        LOG.debug("Deleting temporary volume")
-        cinder.volumes.delete(copied_volume)
-        LOG.debug("Deleting temporary image")
-        client_manager.get_glance().images.delete(image.id)
 
     def backup_cinder(self, volume_id, name=None, description=None,
                       incremental=True, backup=None):
@@ -160,6 +123,7 @@ class BackupOs(object):
                 incremental = False
 
         if backup is not None:
+            backup.source_id = instance
             backup.is_incremental = incremental
             backup.save()
 

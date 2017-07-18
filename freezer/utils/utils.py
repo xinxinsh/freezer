@@ -38,7 +38,6 @@ from freezer.exceptions import utils
 
 LOG = log.getLogger(__name__)
 
-
 def create_dir_tree(directory_path):
     try:
         os.makedirs(directory_path)

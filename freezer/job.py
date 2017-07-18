@@ -47,6 +47,7 @@ class Job(object):
     """
     def __init__(self, conf_dict, storage):
         self.conf = conf_dict
+        self.api_client = conf_dict.api_client
         self.storage = storage
         self.engine = conf_dict.engine
         self._general_validation()
@@ -148,7 +149,7 @@ class BackupJob(Job):
             'consistency_checksum': self.conf.consistency_checksum,
         }
 
-        backup = base_utils.Backup(self.conf.api_client, kwargs)
+        backup = base_utils.Backup(self.api_client, kwargs)
         backup.create()
         try:
             self.backup(app_mode, backup)
@@ -167,7 +168,7 @@ class BackupJob(Job):
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
-        return backup
+        return backup.to_primitive()
 
 
     def backup(self, app_mode, backup):
@@ -186,8 +187,9 @@ class BackupJob(Job):
             backup_os.backup_nova(self.conf.nova_inst_id,
                                   name=self.conf.backup_name,
                                   backup=backup)
+            #dummy value, pls revise it properly
             self.conf.__dict__['backup_chain_name'] = self.conf.backup_name
-        elif backup_media == 'cindernative':
+        elif backup_media == 'cindernative' or backup_media == 'cinder':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
                                                self.conf.incremental))
@@ -196,10 +198,6 @@ class BackupJob(Job):
                                                   incremental=self.conf.incremental,
                                                   backup=backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
-        elif backup_media == 'cinder':
-            LOG.info('Executing cinder snapshot. Volume ID: {0}'.format(
-                self.conf.cinder_vol_id))
-            backup_os.backup_cinder_by_glance(self.conf.cinder_vol_id)
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
@@ -230,16 +228,28 @@ class RestoreJob(Job):
                 'with backup level options')
 
     def execute(self):
-        conf = self.conf
         LOG.info('Executing Restore...')
-        restore_timestamp = None
 
-        restore_abs_path = conf.restore_abs_path
+        conf = self.conf
+        backup_media = conf.backup_media
+        restore_timestamp = None
         if conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(conf.restore_from_date)
         res = restore.RestoreOs(conf.client_manager, conf.container,
                                 self.storage)
-        if conf.backup_media == 'nova':
+        backup = None
+        if backup_media == 'nova':
+            #dummy value, pls revise nova_backup_id properly
+            backup = base_utils.Backup.get_by_id(self.api_client, conf.nova_backup_id)
+        elif backup_media == 'cindernative' or backup_media == 'cinder':
+            backup = base_utils.Backup.get_by_id(self.api_client, conf.cindernative_backup_id)
+        elif backup_media == 'trove':
+            backup = base_utils.Backup.get_by_id(self.api_client, conf.trove_backup_id)
+        if backup is not None:
+            backup.status = base_utils.BackupStatus.RESTORING
+            backup.save()
+
+        if backup_media == 'nova':
             if conf.is_rollback:
                 LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
                          .format(conf.nova_inst_id, restore_timestamp))
@@ -258,12 +268,7 @@ class RestoreJob(Job):
                 res.restore_nova(conf.nova_inst_id, restore_timestamp,
                                 conf.nova_restore_network, conf.backup_nova_name,
                                 conf.backup_flavor_id)
-        elif conf.backup_media == 'cinder':
-            LOG.info("Restoring cinder backup from glance. Volume ID: {0}, "
-                     "timestamp: {1}".format(conf.cinder_vol_id,
-                                             restore_timestamp))
-            res.restore_cinder_by_glance(conf.cinder_vol_id, restore_timestamp)
-        elif conf.backup_media == 'cindernative':
+        elif backup_media == 'cindernative' or backup_media == 'cinder' :
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
                      " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,
                                                    conf.cindernative_backup_id,
@@ -274,7 +279,7 @@ class RestoreJob(Job):
                                dest_volume_id=conf.cindernative_dest_id,
                                volume_type=conf.cindernative_volume_type,
                                restore_from_timestamp=restore_timestamp)
-        elif conf.backup_media == 'trove':
+        elif backup_media == 'trove':
             LOG.info("Restoring cinde backup. Instance ID {0}, Backup ID"
                      " {1},  timestamp: {2}".format(conf.trove_instance_id,
                                                     conf.trove_backup_id,
@@ -284,7 +289,12 @@ class RestoreJob(Job):
                               restore_timestamp)
         else:
             raise Exception("unknown backup type: %s" % conf.backup_media)
-        return {}
+        if backup is not None:
+            backup.status = base_utils.BackupStatus.AVAILABLE
+            backup.save()
+            return backup.to_primitive()
+        else:
+            return {}
 
 
 class AdminJob(Job):

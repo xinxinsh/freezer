@@ -22,7 +22,6 @@ import os
 import subprocess
 import sys
 
-from freezerclient.v1 import client
 from oslo_config import cfg
 from oslo_log import log
 
@@ -238,14 +237,6 @@ def main():
             CONF.print_help()
             sys.exit(1)
 
-        verify = True
-        if CONF.insecure:
-            verify = False
-        api_client = client.Client(opts=CONF, insecure=verify)
-        if CONF.client_id:
-            api_client.client_id = CONF.client_id
-
-        backup_args.__dict__['api_client'] = api_client
         freezer_main(backup_args)
 
     except Exception as err:
