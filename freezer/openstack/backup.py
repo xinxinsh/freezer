@@ -44,6 +44,7 @@ class BackupOs(object):
         Implement nova backup
         :param instance_id: Id of the instance for backup
         :param name: name of this backup
+        :param backup: backup dict
         :return:
         """
         instance_id = instance_id
@@ -70,7 +71,6 @@ class BackupOs(object):
             pass
         nova.servers.update_task(instance_id, None, 'image_backuping')
 
-
     def backup_cinder(self, volume_id, name=None, description=None,
                       incremental=True, backup=None):
         client_manager = self.client_manager
@@ -85,8 +85,8 @@ class BackupOs(object):
             backups = cinder.backups.list(search_opts=search_opts)
             if len(backups) <= 0:
                 LOG.info("No backups exists for volume %s ."
-                       "Degrade to do a full backup before do incremental backup"
-                       % volume_id)
+                         "Degrade to do a full backup before do incremental backup"
+                         % volume_id)
                 incremental = False
 
         if backup is not None:
@@ -132,4 +132,4 @@ class BackupOs(object):
                                         incremental=True)
         else:
             trove.volume_backups.create(instance, name, description, container,
-                                 incremental=False)
+                                        incremental=False)

@@ -32,9 +32,11 @@ CONF = cfg.CONF
 
 global api
 api = None
+
+
 def api_client():
     """dummy implementation"""
-    global  api
+    global api
     if api is None:
         api = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
         if CONF.client_id:

@@ -590,6 +590,7 @@ _CEPH_OPTS = [
                      'volumes i.e. pad with zeroes.')
 ]
 
+
 def env(*args, **kwargs):
     for v in args:
         value = os.environ.get(v, None)
@@ -597,9 +598,10 @@ def env(*args, **kwargs):
             return value
     return kwargs.get('default', '')
 
+
 def get_osclient_opts():
 
-    OSClient_opts = [
+    os_client_opts = [
         cfg.StrOpt('os-username',
                    default=env('OS_USERNAME'),
                    help='Name used for authentication with the OpenStack '
@@ -698,7 +700,8 @@ def get_osclient_opts():
                    dest='os_cacert'),
     ]
 
-    return OSClient_opts
+    return os_client_opts
+
 
 def config(args=[]):
     default_conf = cfg.find_config_files('freezer', 'agent', '.conf')

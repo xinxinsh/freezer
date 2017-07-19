@@ -127,6 +127,7 @@ class BackupJob(Job):
         app_mode = importutils.import_object(mod_name, self.conf)
         self.conf.time_stamp = utils.DateTime.now().timestamp
 
+        backup = None
         kwargs = {
             'curr_backup_level': 0,
             'client_os': sys.platform,
@@ -148,9 +149,9 @@ class BackupJob(Job):
             'consistency_checksum': self.conf.consistency_checksum,
         }
 
-        backup = base_utils.Backup(kwargs)
-        backup.create()
         try:
+            backup = base_utils.Backup(kwargs)
+            backup.create()
             self.backup(app_mode, backup)
         except Exception as e:
             LOG.error('Executing {0} backup failed'.format(
@@ -169,10 +170,10 @@ class BackupJob(Job):
 
         return backup.to_primitive()
 
-
     def backup(self, app_mode, backup):
         """
-        :type app_mode: freezer.mode.mode.Mode
+        :param app_mode: freezer.mode.mode.Mode
+        :param backup: backup dict
         :return:
         """
         backup_media = self.conf.backup_media
@@ -266,14 +267,14 @@ class RestoreJob(Job):
                                 conf.backup_flavor_id))
 
                 res.restore_nova(conf.nova_inst_id, restore_timestamp,
-                                conf.nova_restore_network, conf.backup_nova_name,
-                                conf.backup_flavor_id)
+                                 conf.nova_restore_network, conf.backup_nova_name,
+                                 conf.backup_flavor_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder' :
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
                      " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,
-                                                   conf.cindernative_backup_id,
-                                                   conf.cindernative_dest_id,
-                                                   restore_timestamp))
+                                                                       conf.cindernative_backup_id,
+                                                                       conf.cindernative_dest_id,
+                                                                       restore_timestamp))
             res.restore_cinder(volume_id=conf.cindernative_vol_id,
                                backup_id=conf.cindernative_backup_id,
                                dest_volume_id=conf.cindernative_dest_id,
