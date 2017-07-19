@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/freezer/utils/backup.py" line="87" mnemonic="9" />
+    <bookmark url="file://$PROJECT_DIR$/freezer/utils/backup.py" line="90" mnemonic="9" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d51f94d3-2b6d-4b60-8415-4b27c6045e1f" name="Default" comment="">
       <change type="DELETED" beforePath="$PROJECT_DIR$/../freezer-api/bindep.txt" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/job.py" afterPath="$PROJECT_DIR$/freezer/job.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/main.py" afterPath="$PROJECT_DIR$/freezer/main.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/openstack/backup.py" afterPath="$PROJECT_DIR$/freezer/openstack/backup.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/utils/backup.py" afterPath="$PROJECT_DIR$/freezer/utils/backup.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/utils/utils.py" afterPath="$PROJECT_DIR$/freezer/utils/utils.py" />
     </list>
     <ignored path="freezer.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -35,18 +31,20 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3541">
-              <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
-              <folding />
+            <state relative-caret-position="316">
+              <caret line="226" column="38" selection-start-line="226" selection-start-column="38" selection-end-line="226" selection-end-column="38" />
+              <folding>
+                <element signature="e#667#678#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="job.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="job.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/freezer/job.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="297">
-              <caret line="140" column="64" selection-start-line="140" selection-start-column="64" selection-end-line="140" selection-end-column="64" />
+            <state relative-caret-position="316">
+              <caret line="150" column="29" selection-start-line="150" selection-start-column="29" selection-end-line="150" selection-end-column="29" />
               <folding>
                 <element signature="e#670#680#0" expanded="true" />
               </folding>
@@ -67,18 +65,18 @@
       <file leaf-file-name="backup.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="715">
-              <caret line="70" column="32" selection-start-line="70" selection-start-column="21" selection-end-line="70" selection-end-column="32" />
+            <state relative-caret-position="-159">
+              <caret line="45" column="40" selection-start-line="45" selection-start-column="40" selection-end-line="45" selection-end-column="40" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="backup.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="backup.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="639">
-              <caret line="34" column="7" selection-start-line="34" selection-start-column="7" selection-end-line="34" selection-end-column="7" />
+            <state relative-caret-position="-2128">
+              <caret line="38" column="68" selection-start-line="38" selection-start-column="68" selection-end-line="38" selection-end-column="68" />
               <folding>
                 <element signature="e#619#629#0" expanded="true" />
               </folding>
@@ -119,10 +117,10 @@
         <option value="$PROJECT_DIR$/../freezer-api/freezer_api/storage/elastic.py" />
         <option value="$PROJECT_DIR$/../freezer-api/freezer_api/common/utils.py" />
         <option value="$PROJECT_DIR$/freezer/openstack/backup.py" />
-        <option value="$PROJECT_DIR$/freezer/job.py" />
         <option value="$PROJECT_DIR$/freezer/utils/utils.py" />
         <option value="$PROJECT_DIR$/freezer/main.py" />
         <option value="$PROJECT_DIR$/freezer/utils/backup.py" />
+        <option value="$PROJECT_DIR$/freezer/job.py" />
       </list>
     </option>
   </component>
@@ -990,22 +988,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="355">
-          <caret line="555" column="29" selection-start-line="555" selection-start-column="29" selection-end-line="555" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="715">
-          <caret line="70" column="32" selection-start-line="70" selection-start-column="21" selection-end-line="70" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../freezer-client/freezerclient/v1/client.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="335">
@@ -1027,35 +1009,53 @@
         <state relative-caret-position="-665">
           <caret line="37" column="0" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
           <folding>
-            <element signature="e#666#677#0" expanded="true" />
+            <element signature="e#666#677#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3541">
-          <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
+        <state relative-caret-position="316">
+          <caret line="226" column="38" selection-start-line="226" selection-start-column="38" selection-end-line="226" selection-end-column="38" />
+          <folding>
+            <element signature="e#667#678#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/openstack/backup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-159">
+          <caret line="45" column="40" selection-start-line="45" selection-start-column="40" selection-end-line="45" selection-end-column="40" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/job.py">
+    <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="297">
-          <caret line="140" column="64" selection-start-line="140" selection-start-column="64" selection-end-line="140" selection-end-column="64" />
-          <folding>
-            <element signature="e#670#680#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="355">
+          <caret line="555" column="29" selection-start-line="555" selection-start-column="29" selection-end-line="555" selection-end-column="29" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="639">
-          <caret line="34" column="7" selection-start-line="34" selection-start-column="7" selection-end-line="34" selection-end-column="7" />
+        <state relative-caret-position="-2128">
+          <caret line="38" column="68" selection-start-line="38" selection-start-column="68" selection-end-line="38" selection-end-column="68" />
           <folding>
             <element signature="e#619#629#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/job.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="316">
+          <caret line="150" column="29" selection-start-line="150" selection-start-column="29" selection-end-line="150" selection-end-column="29" />
+          <folding>
+            <element signature="e#670#680#0" expanded="true" />
           </folding>
         </state>
       </provider>

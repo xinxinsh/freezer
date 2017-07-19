@@ -47,7 +47,6 @@ class Job(object):
     """
     def __init__(self, conf_dict, storage):
         self.conf = conf_dict
-        self.api_client = conf_dict.api_client
         self.storage = storage
         self.engine = conf_dict.engine
         self._general_validation()
@@ -149,7 +148,7 @@ class BackupJob(Job):
             'consistency_checksum': self.conf.consistency_checksum,
         }
 
-        backup = base_utils.Backup(self.api_client, kwargs)
+        backup = base_utils.Backup(kwargs)
         backup.create()
         try:
             self.backup(app_mode, backup)
@@ -237,14 +236,15 @@ class RestoreJob(Job):
             restore_timestamp = utils.date_to_timestamp(conf.restore_from_date)
         res = restore.RestoreOs(conf.client_manager, conf.container,
                                 self.storage)
+
         backup = None
         if backup_media == 'nova':
             #dummy value, pls revise nova_backup_id properly
-            backup = base_utils.Backup.get_by_id(self.api_client, conf.nova_backup_id)
+            backup = base_utils.Backup.get_by_id(conf.nova_backup_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder':
-            backup = base_utils.Backup.get_by_id(self.api_client, conf.cindernative_backup_id)
+            backup = base_utils.Backup.get_by_id(conf.cindernative_backup_id)
         elif backup_media == 'trove':
-            backup = base_utils.Backup.get_by_id(self.api_client, conf.trove_backup_id)
+            backup = base_utils.Backup.get_by_id(conf.trove_backup_id)
         if backup is not None:
             backup.status = base_utils.BackupStatus.RESTORING
             backup.save()
