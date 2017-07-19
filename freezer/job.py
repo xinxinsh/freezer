@@ -18,7 +18,6 @@ limitations under the License.
 
 import abc
 import datetime
-import os
 import sys
 import time
 
@@ -27,13 +26,10 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
-from freezer.openstack import backup
 from freezer.openstack import restore
-from freezer.snapshot import snapshot
-from freezer import utils as base_utils
-from freezer.utils import checksum
 from freezer.utils import exec_cmd
 from freezer.utils import utils
+from freezer.utils import backup as db
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
@@ -135,22 +131,23 @@ class BackupJob(Job):
             'description': self.conf.description,
             'client_version': self.conf.__version__,
             'time_stamp': self.conf.time_stamp,
+            'end_time_stamp': self.conf.time_stamp,
             'action': self.conf.action,
             'always_level': self.conf.always_level,
             'backup_name': self.conf.backup_name,
             'hostname_backup_name': self.conf.hostname_backup_name,
             'container': self.conf.container,
             'hostname': self.conf.hostname,
-            'max_level': self.conf.max_level,
             'storage': self.conf.storage,
             'mode': self.conf.mode,
-            'status': base_utils.BackupStatus.CREATING,
+            'size': 0,
+            'status': db.BackupStatus.CREATING,
             'compression': self.conf.compression,
             'consistency_checksum': self.conf.consistency_checksum,
         }
 
         try:
-            backup = base_utils.Backup(kwargs)
+            backup = db.Backup(**kwargs)
             backup.create()
             self.backup(app_mode, backup)
         except Exception as e:
@@ -158,13 +155,13 @@ class BackupJob(Job):
                 self.conf.backup_media))
             LOG.exception(e)
 
-            backup.status = base_utils.BackupStatus.ERROR
-            backup.backup_chain_name = self.conf.get('backup_chain_name')
+            backup.status = db.BackupStatus.ERROR
+            backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
             backup.end_time_stamp = utils.DateTime.now().timestamp
             backup.save()
 
-        backup.status = base_utils.BackupStatus.AVAILABLE
-        backup.backup_chain_name = self.conf.get('backup_chain_name')
+        backup.status = db.BackupStatus.AVAILABLE
+        backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
@@ -241,13 +238,13 @@ class RestoreJob(Job):
         backup = None
         if backup_media == 'nova':
             #dummy value, pls revise nova_backup_id properly
-            backup = base_utils.Backup.get_by_id(conf.nova_backup_id)
+            backup = db.Backup.get_by_id(conf.nova_backup_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder':
-            backup = base_utils.Backup.get_by_id(conf.cindernative_backup_id)
+            backup = db.Backup.get_by_id(conf.cindernative_backup_id)
         elif backup_media == 'trove':
-            backup = base_utils.Backup.get_by_id(conf.trove_backup_id)
+            backup = db.Backup.get_by_id(conf.trove_backup_id)
         if backup is not None:
-            backup.status = base_utils.BackupStatus.RESTORING
+            backup.status = db.BackupStatus.RESTORING
             backup.save()
 
         if backup_media == 'nova':
@@ -291,7 +288,7 @@ class RestoreJob(Job):
         else:
             raise Exception("unknown backup type: %s" % conf.backup_media)
         if backup is not None:
-            backup.status = base_utils.BackupStatus.AVAILABLE
+            backup.status = db.BackupStatus.AVAILABLE
             backup.save()
             return backup.to_primitive()
         else:

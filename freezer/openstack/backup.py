@@ -56,7 +56,7 @@ class BackupOs(object):
         if backup is not None:
             backup.source_id = instance_id
             #dummy value, pls, revise this value properly
-            backup.is_incremental = False
+            #backup.is_incremental = False
             backup.save()
 
         nova.servers.update_task(instance_id, 'image_backuping')
@@ -91,7 +91,7 @@ class BackupOs(object):
 
         if backup is not None:
             backup.source_id = volume_id
-            backup.is_incremental = incremental
+            #backup.is_incremental = incremental
             backup.save()
 
         if incremental:
@@ -124,7 +124,7 @@ class BackupOs(object):
 
         if backup is not None:
             backup.source_id = instance
-            backup.is_incremental = incremental
+            #backup.is_incremental = incremental
             backup.save()
 
         if incremental:

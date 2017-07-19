@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import sys
-import socket
 import six
 
 from oslo_config import cfg
@@ -22,11 +20,12 @@ from oslo_utils import excutils
 from oslo_versionedobjects._i18n import _, _LE
 from oslo_versionedobjects import exception
 from oslo_versionedobjects import fields
+from oslo_versionedobjects import base
 
-from freezer import __version__ as FREEZER_VERSIO
 from freezerclient.v1 import client
 
 Enum = fields.Enum
+BaseEnumField = fields.BaseEnumField
 LOG = log.getLogger(__name__)
 CONF = cfg.CONF
 
@@ -39,8 +38,6 @@ def api_client():
     global api
     if api is None:
         api = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
-        if CONF.client_id:
-            api.client_id = CONF.client_id
     return api
 
 
@@ -60,108 +57,71 @@ class BackupStatus(Enum):
         super(BackupStatus, self).__init__(valid_values=BackupStatus.ALL)
 
 
-def _make_class_properties(cls):
-    for name, field in six.iteritems(cls.fields):
-        if not isinstance(field, fields.Field):
-            raise exception.ObjectFieldInvalid(
-                field=name, objname=cls.__name__)
-
-        def getter(self, name=name):
-            return getattr(self, name)
-
-        def setter(self, value, name=name, field=field):
-            field_value = field.coerce(self, name, value)
-            self._changed_fields.add(name)
-            try:
-                return setattr(self, name, field_value)
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    attr = "%s.%s" % (self.__name__, name)
-                    LOG.exception(_LE('Error setting %(attr)s'),
-                                  {'attr': attr})
-
-        def deleter(self, name=name):
-            if not hasattr(self, name):
-                raise AttributeError("No such attribute `%s'" % name)
-            delattr(self, name)
-
-        setattr(cls, name, property(getter, setter, deleter))
+class BackupStatusField(BaseEnumField):
+    AUTO_TYPE = BackupStatus()
 
 
-class Backup(object):
+@base.VersionedObjectRegistry.register
+class Backup(base.VersionedObject):
     fields = {
-        'backend_id': fields.UUIDField(nullable=True),
-        'curr_backup_level': fields.IntegerField(default=0),
-        'client_os': sys.platform,
-        'source_id': fields.UUIDField(nullable=True),
-        'project_id': fields.UUIDField(nullable=True),
+        'backend_id': fields.UUIDField(),
+        'curr_backup_level': fields.IntegerField(nullable=True),
+        'client_os': fields.StringField(nullable=True),
+        'source_id': fields.UUIDField(),
+        'project_id': fields.UUIDField(),
+        'size': fields.IntegerField(nullable=True),
         'description': fields.StringField(nullable=True),
-        'end_time_stamp': fields.StringField(nullable=True),
+        'end_time_stamp': fields.IntegerField(nullable=True),
         'backup_chain_name': fields.StringField(nullable=True),
-        'is_incremental': fields.BooleanField(default=False),
-        'client_version': FREEZER_VERSIO,
-        'time_stamp': fields.StringField(nullable=True),
+        'parent_id': fields.StringField(nullable=True),
+        'client_version': fields.StringField(nullable=True),
+        'time_stamp': fields.IntegerField(nullable=True),
         'action': fields.StringField(default='backup'),
         'always_level': fields.StringField(default=False),
-        'backup_name': fields.StringField(),
-        'hostname_backup_name': fields.StringField(),
+        'backup_name': fields.StringField(nullable=True),
+        'hostname_backup_name': fields.StringField(nullable=True),
         'container': fields.StringField(default='backups'),
-        'hostname': socket.gethostname(),
-        'max_level': fields.BooleanField(default=False),
+        'hostname': fields.StringField(nullable=True),
         'storage': fields.StringField(default='ceph'),
         'mode': fields.StringField(default='cindernative'),
-        'status': BackupStatus(nullable=True),
+        'status': BackupStatusField(nullable=True),
         'compression': fields.StringField(nullable=True),
         'consistency_checksum': fields.StringField(nullable=True),
     }
 
-    def __init__(self, **kwargs):
-        self._changed_fields = set()
-        self.backup_id = None
+    obj_extra_fields = ['backup_id', 'is_incremental', 'has_dependent_backups']
 
-        _make_class_properties(self)
-        for key in kwargs.keys():
-            setattr(self, key, kwargs[key])
+    def __init__(self, context=None, **kwargs):
+        super(Backup, self).__init__(context, **kwargs)
+        self.backup_id = None
 
     @property
     def is_incremental(self):
-        return bool(self.fields.is_incremental)
+        return bool(self.parent_id)
 
-    def get_changes(self):
-        """Returns a set of changed fields and their new values"""
-        changed_fields = set([field for field in self._change_fields
-                       if field in self.fields])
-        changes = {}
-        for key in changed_fields:
-            changes[key] = getattr(self, key)
-        return changes
+    @property
+    def obj_fields(self):
+        return list(self.fields.keys()) + self.obj_extra_fields
 
-    def reset_changes(self, fields=None):
-        """Reset the list of fields that have been changed
-
-        :param fields: List of fields to reset, or "all" if None.
-        """
-        if fields:
-            self._changed_fields -= set(fields)
-        else:
-            self._changed_fields.clear()
+    def obj_load_attr(self):
+        pass
 
     def create(self):
-        if self.backup_id is not None:
+        if self.obj_attr_is_set('backup_id'):
             raise exception.ObjectActionError(action='create',
                                               reason='already created')
-        updates = self.get_changes()
+        updates = self.obj_get_changes()
         backup_id = api_client().backups.create(updates)
         self.backup_id = backup_id
 
-        self.reset_changes()
+        self.obj_reset_changes()
 
     def save(self):
-        updates = self.get_changes()
+        updates = self.obj_get_changes()
         if updates:
             api_client().backups.update(self.backup_id, updates)
 
-        self.reset_changes()
+        self.obj_reset_changes()
 
     def destroy(self):
         api_client().backups.delete(self.backup_id)
