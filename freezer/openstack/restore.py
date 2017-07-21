@@ -78,7 +78,7 @@ class RestoreOs(object):
         elif self.storage.type == 'swift':
             timestamp = backup.timestamp
             backup_id = backup.id
-            path = "{0}_segments/{1}_{2}/{3}".format(self.container, path, backup_id, teimstamp)
+            path = "{0}_segments/{1}_{2}/{3}".format(self.container, path, backup_id, restore_from_timestamp)
             stream = swift.get_object(self.container,
                                       "{}/{}".format(path, timestamp),
                                       resp_chunk_size=self.storage.max_segment_size)
@@ -99,7 +99,7 @@ class RestoreOs(object):
         elif self.storage.type == 'local':
             timestamp = backup.timestamp
             image_file = "{0}/{1}/{2}/{3}".format(self.container, path,
-                                                  timestamep, path)
+                                                  restore_from_timestamp, path)
             metadata_file = "{0}/{1}/{2}/metadata".format(self.container,
                                                           path, timestamp)
             try:
