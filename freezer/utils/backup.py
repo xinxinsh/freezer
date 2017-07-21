@@ -104,6 +104,45 @@ class Backup(base.VersionedObject):
     def obj_fields(self):
         return list(self.fields.keys()) + self.obj_extra_fields
 
+    def __iter__(self):
+        for name in self.obj_fields:
+            if (self.obj_attr_is_set(name) or
+                    name in self.obj_extra_fields):
+                yield name
+
+    iterkeys = __iter__
+
+    def itervalues(self):
+        for name in self:
+            yield getattr(self, name)
+
+    def iteritems(self):
+        for name in self:
+            yield name, getattr(self, name)
+
+    if six.PY3:
+        # Python 3 dictionaries don't have iterkeys(),
+        # itervalues() or iteritems() methods. These methods are provided to
+        # ease the transition from Python 2 to Python 3.
+        keys = iterkeys
+        values = itervalues
+        items = iteritems
+    else:
+        def keys(self):
+            return list(self.iterkeys())
+
+        def values(self):
+            return list(self.itervalues())
+
+        def items(self):
+            return list(self.iteritems())
+
+    def __getitem__(self, name):
+        return getattr(self, name)
+
+    def __setitem__(self, name, value):
+        setattr(self, name, value)
+
     def obj_load_attr(self):
         pass
 
@@ -151,8 +190,9 @@ class Backup(base.VersionedObject):
 
     @staticmethod
     def _from_db_backup(backup, db_backup):
+        backup_meta = db_backup.get('backup_metadata', {})
         for name, field in backup.fields.items():
-            value = db_backup.get(name)
+            value = backup_meta.get(name)
             if isinstance(field, fields.IntegerField):
                 value = value if value is not None else 0
             backup[name] = value
