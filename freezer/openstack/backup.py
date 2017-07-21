@@ -81,11 +81,11 @@ class BackupOs(object):
 
         LOG.debug("Creation {0} backup".format('INCREMENTAL' if incremental else 'FULL'))
 
-	headers = {"x-object-meta-name": instance.name,
-		   "x-object-backup-name": name,
-		   "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
-	latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
-	if incremental and latest_backup:
+        headers = {"x-object-meta-name": instance.name,
+                   "x-object-backup-name": name,
+                   "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
+        latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
+        if incremental and latest_backup:
 	    backup.backup_chain_name = latest_backup['backup_metadata']['backup_chain_name']
 	else:
 	    backup.backup_chain_name = backup.backup_id
