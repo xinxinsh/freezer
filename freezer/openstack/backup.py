@@ -96,7 +96,7 @@ class BackupOs(object):
 
         if backup:
             backup.source_id = instance_id
-            backup.is_incremental = incremental
+            backup.parent_id = (None if not latest_backup else latest_backup.backup_id)
 
         return info
 
