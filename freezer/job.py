@@ -236,7 +236,6 @@ class RestoreJob(Job):
 
         backup = None
         if backup_media == 'nova':
-            #dummy value, pls revise nova_backup_id properly
             backup = db.Backup.get_by_id(conf.nova_backup_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder':
             backup = db.Backup.get_by_id(conf.cindernative_backup_id)
@@ -264,7 +263,8 @@ class RestoreJob(Job):
 
                 res.restore_nova(conf.nova_inst_id, restore_timestamp,
                                  conf.nova_restore_network, conf.backup_nova_name,
-                                 conf.backup_flavor_id)
+                                 conf.backup_flavor_id,
+                                 conf.nova_backup_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder' :
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
                      " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,

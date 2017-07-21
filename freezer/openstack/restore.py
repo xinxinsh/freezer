@@ -258,12 +258,15 @@ class RestoreOs(object):
 
     def restore_nova(self, instance_id, restore_from_timestamp,
                      nova_network=None, backup_nova_name=None, 
-                     backup_flavor_id=None):
+                     backup_flavor_id=None, nova_backup_id=None):
         """
         :param restore_from_timestamp:
         :type restore_from_timestamp: int
         :param instance_id: id of attached nova instance
         :param nova_network: id of network
+        :param backup_nova_name:
+        :param backup_flavor_id:
+        :param nova_backup_id:
         :return:
         """
         # TODO(yangyapeng): remove nova_network check use nova api,

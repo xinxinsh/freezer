@@ -129,6 +129,7 @@ DEFAULT_PARAMS = {
     'consistency_check': False,
     'consistency_checksum': None,
     'nova_restore_network': None,
+    'nova_backup_id': None,
     'cindernative_backup_id': None,
     'cindernative_dest_id': None,
     'cindernative_volume_type':None,
@@ -454,6 +455,11 @@ _COMMON = [
                dest='nova_inst_id',
                default=DEFAULT_PARAMS['nova_inst_id'],
                help="Id of nova instance for backup"
+               ),
+    cfg.StrOpt('nova-backup-id',
+               dest='nova_backup_id',
+               default=DEFAULT_PARAMS['nova_backup_id'],
+               help='Id of the nova backup to be restored'
                ),
      cfg.StrOpt('backup-nova-name',
                dest='backup_nova_name',
@@ -836,14 +842,12 @@ def get_backup_args():
 
     # TODO(enugaev): move it to new command line param backup_media
 
-    backup_media = 'fs'
-    if backup_args.cinder_vol_id:
-        backup_media = 'cinder'
-    elif backup_args.cindernative_vol_id or backup_args.cindernative_backup_id:
+    backup_media = 'cindernative'
+    if backup_args.cindernative_vol_id or backup_args.cindernative_backup_id:
         backup_media = 'cindernative'
-    elif backup_args.nova_inst_id:
+    elif backup_args.nova_inst_id or backup_args.nova_backup_id:
         backup_media = 'nova'
-    elif backup_args.trove_instance_id:
+    elif backup_args.trove_instance_id or backup_args.trove_backup_id:
         backup_media = 'trove'
 
     backup_args.__dict__['backup_media'] = backup_media
