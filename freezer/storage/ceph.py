@@ -184,8 +184,10 @@ class CephStorage(physical.PhysicalStorage):
 
         return backup_snaps[0]['name']
 
-    def _get_backup_base_name(self, backup_name):
-        return freezer_utils.convert_str("%s.backup.base" % backup_name)
+    def _get_backup_base_name(self, backup_name, chain_name=None):
+        if chain_name:
+            return freezer_utils.convert_str("%s.backup.base.%s" % (backup_name, chain_name))
+        return freezer_utils.convert_str("%s.backup.base" % (backup_name))
 
     def _snap_exist(self, backup_name , snap_name, client):
         base_image = self.rbd.Image(client.ioctx, backup_name)
@@ -380,7 +382,7 @@ class CephStorage(physical.PhysicalStorage):
             LOG.info(msg)
             raise exceptions.BackupOperationError(msg)
 
-    def backup(self, connection_info, backup_name, headers=None):
+    def backup(self, connection_info, backup_name, headers=None, backup=None):
         src_conn = connection_info['data']
         src_pool, src_name = src_conn['name'].rsplit('/', 1)
         src_user = src_conn['auth_username']
@@ -390,12 +392,15 @@ class CephStorage(physical.PhysicalStorage):
         src_client = RADOSClient(self, src_pool, src_user, src_cluster, src_conf)
         src_image = self.rbd.Image(src_client.ioctx, freezer_utils.convert_str(src_name))
         src_size = src_image.size()
-        backup_base = backup_name.rsplit("_", 1)[0]
-        backup_id = backup_name.rsplit("_", 1)[1]
+        backup.size = src_size
+        backup_base = backup_name.rsplit("_", 2)[0]
+        backup_id = backup.backup_id
+        timestamp = backup.time_stamp
+        chain_name = backup.backup_chain_name
         dst_client = RADOSClient(self, self.ceph_backup_pool)
         
         from_snap = self._get_most_recent_snap(src_image)
-        base_name = self._get_backup_base_name(backup_base)
+        base_name = self._get_backup_base_name(backup_base, chain_name)
         image_created = False
 
         if base_name not in self.rbd.RBD().list(ioctx=dst_client.ioctx):
@@ -414,7 +419,7 @@ class CephStorage(physical.PhysicalStorage):
                 LOG.info(errmsg)
                 raise exceptions.BackupOperationError(errmsg)
 
-        new_snap = self._get_new_snap_name(backup_base, backup_id)
+        new_snap = self._get_new_snap_name(backup_id, timestamp)
         src_image.create_snap(new_snap)
         try:
             self._rbd_diff_transfer(src_name, src_pool, base_name, 
@@ -444,7 +449,10 @@ class CephStorage(physical.PhysicalStorage):
 		self.ceph_backup_pool, base_name)
 	    headers["x-object-meta-length"] = src_size
 	    
+            base_name = self._get_backup_base_name(backup_base)
 	    self._backup_metadata(headers, base_name)
+
+        return backup
 
     def add_stream(self, stream, backup_name, headers=None):
 
@@ -486,42 +494,32 @@ class CephStorage(physical.PhysicalStorage):
         
         self._backup_metadata(headers, backup_name)
 
-    def get_header(self, backup_name, restore_point):
+    def get_header(self, backup):
         """Get backup metdata"""
+        base_id = backup.source_id
+        chain_name = backup.backup_chain_name
+        backup_name = '{0}_{1}_{2}'.format(base_id, backup.backup_id, backup.time_stamp)
         with RADOSClient(self, self.ceph_backup_pool) as client:
-            base_name = self._get_backup_base_name(backup_name)
+            base_name = self._get_backup_base_name(base_id, chain_name)
             backups = self.rbd.RBD().list(client.ioctx)
             if base_name in backups:
-                backup_name = base_name
+                backup_name = self._get_backup_base_name(base_id)
             vol_meta = VolumeMetadataBackup(client, backup_name)
             json_meta = vol_meta.get()
             header = jsonutils.loads(json_meta)
 
         return header
 
-    def get_backups(self, pool, prefix):
-        """Return RBD Images prefix with {prefix}"""
-        base_name = self._get_backup_base_name(prefix)
-        with RADOSClient(self, pool) as client:
-            backups = self.rbd.RBD().list(client.ioctx)
-            
-            if base_name in backups:
-                # increamental backups    
-                rbd_image = self.rbd.Image(client.ioctx, base_name)
-                snaps = rbd_image.list_snaps()
-                rbd_image.close()
-                backups = list(filter(lambda x: x['name'].rsplit("_", 2)[0] == prefix, snaps))
-                backups = map(lambda x: x['name'], backups)
-            else:
-                # full backup
-                backups = list(filter(lambda x: x.rsplit("_", 1)[0] == prefix, backups))
-
-        return backups
-
-    def create_image(self, backup_name):
-        backup_id = backup_name.rsplit("_", 1)[0]
-        restore_point = backup_name.rsplit("_", 1)[1]
-        base_name = self._get_backup_base_name(backup_id)
+    def create_image(self, backup):
+        """
+        backup_name should be {base_id}_{backup_id}_{timestamp}
+        """
+        base_id = backup.source_id
+        backup_id = backup.backup_id
+        restore_point = backup.time_stamp
+        chain_name = backup.backup_chain_name
+        base_name = self._get_backup_base_name(base_id, chain_name)
+        backup_name = "{0}_{1}".format(base_id, restore_point)
 
         with RADOSClient(self, self.ceph_backup_pool) as client:
             rbds = self.rbd.RBD().list(client.ioctx)
@@ -575,8 +573,8 @@ class CephStorage(physical.PhysicalStorage):
             if json_meta:
                 header = jsonutils.loads(json_meta)
 
-            ordered_backup['backup_id'] = backup.rsplit('_', 1)[0]
-            ordered_backup['source_id'] = backup.rsplit('_', 1)[0]
+            ordered_backup['backup_id'] = backup.rsplit('_', 2)[1]
+            ordered_backup['source_id'] = backup.rsplit('_', 2)[0]
             ordered_backup['status'] = 'available' if header else 'error'
             ordered_backup['name'] = header['x-object-backup-name'] if header else ''
 
@@ -595,7 +593,7 @@ class CephStorage(physical.PhysicalStorage):
         backups = cinder.backups.list()
         for backup in backups:
             ordered_backup = {}
-            ordered_backup['backup_id'] = backup.id
+            ordered_backup['backup_id'] = backup.backup_id
             ordered_backup['source_id'] = backup.volume_id
             ordered_backup['status'] = backup.status
             ordered_backup['name'] = backup.name

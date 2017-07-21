@@ -20,6 +20,7 @@ import time
 from oslo_log import log
 
 from freezer.utils import utils
+from freezer.utils import backup as db_backup
 
 LOG = log.getLogger(__name__)
 
@@ -39,18 +40,29 @@ class BackupOs(object):
         self.container = container
         self.storage = storage
 
-    def backup_nova(self, instance_id, name=None, backup=None):
+    def backup_nova(self, instance_id, name=None, incremental=True, backup=None):
         """
         Implement nova backup
         :param instance_id: Id of the instance for backup
         :param name: name of this backup
-        :param backup: backup dict
         :return:
         """
         instance_id = instance_id
         client_manager = self.client_manager
         nova = client_manager.get_nova()
         instance = nova.servers.get(instance_id)
+        if backup:
+            backup_id = backup.backup_id
+
+
+        def instance_finish_task():
+            instance = nova.servers.get(instance_id)
+            return not instance.__dict__['OS-EXT-STS:task_state']
+
+        utils.wait_for(instance_finish_task, 5, 300,
+                       message="Wait for instance {0} to finish {1} to start snapshot "
+                               "process".format(instance_id,
+                                                instance.__dict__['OS-EXT-STS:task_state']))
 
         connection_info = nova.servers.connection_info(instance_id)._info
         if backup is not None:
@@ -60,16 +72,33 @@ class BackupOs(object):
             backup.save()
 
         nova.servers.update_task(instance_id, 'image_backuping')
-        headers = {"x-object-meta-name": instance.name,
-                   "x-object-backup-name": name,
-                   "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
+        package = "{0}_{1}_{2}".format(instance_id, backup_id, backup.time_stamp)
+
         if self.storage.type == 'ceph' and connection_info['driver_volume_type'] == 'rbd':
-            package = "{0}_{1}".format(instance_id, utils.DateTime.now().timestamp)
-            self.storage.backup(connection_info, package, headers)
+            incremental = True
         else:
-            # should do full backup
-            pass
+            incremental = False
+
+        LOG.debug("Creation {0} backup".format('INCREMENTAL' if incremental else 'FULL'))
+
+	headers = {"x-object-meta-name": instance.name,
+		   "x-object-backup-name": name,
+		   "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
+	latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
+	if incremental and latest_backup:
+	    backup.backup_chain_name = latest_backup['backup_metadata']['backup_chain_name']
+	else:
+	    backup.backup_chain_name = backup.backup_id
+
+        info = self.storage.backup(connection_info, package, headers, backup)
+
         nova.servers.update_task(instance_id, None, 'image_backuping')
+
+        if backup:
+            backup.source_id = instance_id
+            backup.is_incremental = incremental
+
+        return info
 
     def backup_cinder(self, volume_id, name=None, description=None,
                       incremental=True, backup=None):

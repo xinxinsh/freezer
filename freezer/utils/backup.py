@@ -21,6 +21,7 @@ from oslo_versionedobjects._i18n import _, _LE
 from oslo_versionedobjects import exception
 from oslo_versionedobjects import fields
 from oslo_versionedobjects import base
+from freezerclient.v1 import client
 
 from freezerclient.v1 import client
 
@@ -115,6 +116,22 @@ class Backup(base.VersionedObject):
         self.backup_id = backup_id
 
         self.obj_reset_changes()
+
+    @classmethod
+    def get_latest_backup(cls, source_id=None, from_timestamp=None):
+        backups = api_client().backups.list(limit=100)
+        if not backups:
+            return None
+        backups = list(filter(lambda x: x['backup_metadata']['source_id'] == \
+                       source_id and x['backup_metadata']['status'] == 'available', backups))
+        backups.sort(key=lambda x: x['backup_metadata']['time_stamp'])
+        backup = backups[-1]
+        if from_timestamp:
+            backups = list(filter(lambda x: x['backup_metadata']['time_stamp'] \
+                            < from_timestamp, backups))
+            backup = backups[-1]
+        backup['backup_metadata']['backup_id'] = backup['backup_id']
+        return backup
 
     def save(self):
         updates = self.obj_get_changes()

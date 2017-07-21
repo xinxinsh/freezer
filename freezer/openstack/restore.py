@@ -22,6 +22,7 @@ import time
 
 from oslo_log import log
 from freezer.utils import utils
+from freezer.utils import backup as db_backup
 
 LOG = log.getLogger(__name__)
 
@@ -38,37 +39,19 @@ class RestoreOs(object):
         :type path: str
         :param restore_from_timestamp:
         :type restore_from_timestamp: int
-        :return:
+        :return: a backup class that include restore point info
         """
-        if self.storage.type == 'ceph':
-            backups = self.storage.get_backups(self.container, path)
-            backups = sorted(map(lambda x: int(x.rsplit("_", 1)[-1]), backups))
-        elif self.storage.type == "swift":
-            swift = self.client_manager.get_swift()
-            path = "{0}_segments/{1}/".format(self.container, path)
-            info, backups = swift.get_container(self.container, prefix=path)
-            backups = sorted(
-                map(lambda x: int(x["name"].rsplit("/", 1)[-1]), backups))
-        elif self.storage.type == "local":
-            path = "{0}/{1}".format(self.container, path)
-            backups = os.listdir(os.path.abspath(path))
-        elif self.storage.type == "ssh":
-            path = "{0}/{1}".format(self.container, path)
-            backups = self.storage.listdir(path)
-        else:
-            msg = ("{} storage type is not supported at the moment."
-                   " Try local, swift or ssh".format(self.storage.type))
-            print(msg)
-            raise BaseException(msg)
-
-        if not restore_from_timestamp:
-            restore_from_timestamp = backups[-1]
-        backups = list(filter(lambda x: x <= restore_from_timestamp, backups))
-        if not backups:
+ 
+        """
+        get all backups from db, and get restore backup based on restore_from_timestamp
+        then get backup object from storage
+        """
+        latest_backup =  db_backup.Backup.get_latest_backup(path, restore_from_timestamp)
+        if not latest_backup:
             msg = "Cannot find backups for path: %s" % path
             LOG.error(msg)
             raise BaseException(msg)
-        return backups[-1]
+        return latest_backup
 
     def _create_image(self, path, restore_from_timestamp):
         """
@@ -79,21 +62,25 @@ class RestoreOs(object):
         """
         swift = self.client_manager.get_swift()
         glance = self.client_manager.get_glance()
-        backup = self._get_backups(path, restore_from_timestamp)
+        info = self._get_backups(path, restore_from_timestamp)
+        # the db search return a dictionary, how to initialize backup class
+        backup = db_backup.Backup(**info)
         if self.storage.type == 'ceph':
-            info = self.storage.get_header(path, backup)
-            path = "{0}_{1}".format(path, backup)
+            info = self.storage.get_header(backup)
+            path = "{0}_{1}".format(path, backup.backup_id)
             images = list(glance.images.list(filters=
                                              {"name":"restore_{}".format(info['X-Object-Manifest'])}))
             if images and images[0]['status'] == 'active':
                 return info, images[0]
             else:
-                image = self.storage.create_image(path)
+                image = self.storage.create_image(backup)
                 return info, image
         elif self.storage.type == 'swift':
-            path = "{0}_segments/{1}/{2}".format(self.container, path, backup)
+            timestamp = backup.timestamp
+            backup_id = backup.id
+            path = "{0}_segments/{1}_{2}/{3}".format(self.container, path, backup_id, teimstamp)
             stream = swift.get_object(self.container,
-                                      "{}/{}".format(path, backup),
+                                      "{}/{}".format(path, timestamp),
                                       resp_chunk_size=self.storage.max_segment_size)
             length = int(stream[0]["x-object-meta-length"])
             data = utils.ReSizeStream(stream[1], length, self.storage.max_segment_size)
@@ -110,10 +97,11 @@ class RestoreOs(object):
                     data=data)
                 return info, image
         elif self.storage.type == 'local':
+            timestamp = backup.timestamp
             image_file = "{0}/{1}/{2}/{3}".format(self.container, path,
-                                                  backup, path)
+                                                  timestamep, path)
             metadata_file = "{0}/{1}/{2}/metadata".format(self.container,
-                                                          path, backup)
+                                                          path, timestamp)
             try:
                 data = open(image_file, 'rb')
             except Exception:
@@ -133,10 +121,11 @@ class RestoreOs(object):
                     data=data)
                 return info, image
         elif self.storage.type == 'ssh':
+            timestamp = backup.timestamp
             image_file = "{0}/{1}/{2}/{3}".format(self.container, path,
-                                                  backup, path)
+                                                  timestamp, path)
             metadata_file = "{0}/{1}/{2}/metadata".format(self.container,
-                                                          path, backup)
+                                                          path, timestamp)
             try:
                 data = self.storage.open(image_file, 'rb')
             except Exception:
@@ -286,8 +275,8 @@ class RestoreOs(object):
         # a project, find all available network in restore nova.
         # implementation it after tenant backup add get_neutron in
         # openstack oslient.
-        nova = self.client_manager.get_nova()
         (info, image) = self._create_image(instance_id, restore_from_timestamp)
+        nova = self.client_manager.get_nova()
         
         if backup_nova_name :
             name = backup_nova_name
