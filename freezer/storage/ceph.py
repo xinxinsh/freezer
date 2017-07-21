@@ -449,7 +449,6 @@ class CephStorage(physical.PhysicalStorage):
 		self.ceph_backup_pool, base_name)
 	    headers["x-object-meta-length"] = src_size
 	    
-            base_name = self._get_backup_base_name(backup_base)
 	    self._backup_metadata(headers, base_name)
 
         return backup
