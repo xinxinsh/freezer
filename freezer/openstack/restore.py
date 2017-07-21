@@ -17,7 +17,6 @@ Freezer restore modes related functions
 """
 
 import json
-import os
 import time
 
 from oslo_log import log

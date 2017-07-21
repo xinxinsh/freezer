@@ -16,12 +16,9 @@ import six
 
 from oslo_config import cfg
 from oslo_log import log
-from oslo_utils import excutils
-from oslo_versionedobjects._i18n import _, _LE
 from oslo_versionedobjects import exception
 from oslo_versionedobjects import fields
 from oslo_versionedobjects import base
-from freezerclient.v1 import client
 
 from freezerclient.v1 import client
 
@@ -30,12 +27,12 @@ BaseEnumField = fields.BaseEnumField
 LOG = log.getLogger(__name__)
 CONF = cfg.CONF
 
+
 global api
 api = None
 
 
 def api_client():
-    """dummy implementation"""
     global api
     if api is None:
         api = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
