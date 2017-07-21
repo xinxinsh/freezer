@@ -447,6 +447,7 @@ class CephStorage(physical.PhysicalStorage):
 		headers = {}
 	    headers['X-Object-Manifest'] = u'{0}/{1}'.format(
 		self.ceph_backup_pool, base_name)
+	    headers["x-object-snapshot"] = backup_id
 	    headers["x-object-meta-length"] = src_size
 	    
 	    self._backup_metadata(headers, base_name)
@@ -497,13 +498,10 @@ class CephStorage(physical.PhysicalStorage):
         """Get backup metdata"""
         base_id = backup.source_id
         chain_name = backup.backup_chain_name
-        backup_name = '{0}_{1}_{2}'.format(base_id, backup.backup_id, backup.time_stamp)
         with RADOSClient(self, self.ceph_backup_pool) as client:
             base_name = self._get_backup_base_name(base_id, chain_name)
             backups = self.rbd.RBD().list(client.ioctx)
-            if base_name in backups:
-                backup_name = self._get_backup_base_name(base_id)
-            vol_meta = VolumeMetadataBackup(client, backup_name)
+            vol_meta = VolumeMetadataBackup(client, base_name)
             json_meta = vol_meta.get()
             header = jsonutils.loads(json_meta)
 
@@ -518,7 +516,7 @@ class CephStorage(physical.PhysicalStorage):
         restore_point = backup.time_stamp
         chain_name = backup.backup_chain_name
         base_name = self._get_backup_base_name(base_id, chain_name)
-        backup_name = "{0}_{1}".format(base_id, restore_point)
+        backup_name = "{0}_{1}".format(base_id, backup_id)
 
         with RADOSClient(self, self.ceph_backup_pool) as client:
             rbds = self.rbd.RBD().list(client.ioctx)
