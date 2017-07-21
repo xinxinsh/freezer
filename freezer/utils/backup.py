@@ -169,7 +169,7 @@ class Backup(base.VersionedObject):
             backups = list(filter(lambda x: x['backup_metadata']['time_stamp'] \
                             < from_timestamp, backups))
             backup = backups[-1]
-        return cls._from_db_backup(cls, backup)
+        return cls._from_db_backup(cls(), backup)
 
     def save(self):
         updates = self.obj_get_changes()
