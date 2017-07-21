@@ -159,17 +159,18 @@ class Backup(base.VersionedObject):
     @classmethod
     def get_latest_backup(cls, source_id=None, from_timestamp=None):
         backups = api_client().backups.list(limit=100)
-        backups = list(filter(lambda x: x['backup_metadata']['source_id'] == \
+        backups = list(filter(lambda x: x['backup_metadata']['source_id'] ==
                        source_id and x['backup_metadata']['status'] == 'available', backups))
         backups.sort(key=lambda x: x['backup_metadata']['time_stamp'])
+
         if not backups:
             return None
         backup = backups[-1]
         if from_timestamp:
-            backups = list(filter(lambda x: x['backup_metadata']['time_stamp'] \
-                            < from_timestamp, backups))
+            backups = list(filter(lambda x: x['backup_metadata']['time_stamp']
+                           < from_timestamp, backups))
             backup = backups[-1]
-        return cls._from_db_backup(cls, backup)
+        return cls._from_db_backup(cls(), backup)
 
     def save(self):
         updates = self.obj_get_changes()
@@ -195,10 +196,12 @@ class Backup(base.VersionedObject):
             value = backup_meta.get(name)
             if isinstance(field, fields.IntegerField):
                 value = value if value is not None else 0
+            if value is None:
+                continue
             backup[name] = value
 
         backup.backup_id = db_backup.get('backup_id')
-        backup.reset_changes()
+        backup.obj_reset_changes()
         return backup
 
     @classmethod

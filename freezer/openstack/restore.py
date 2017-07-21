@@ -62,14 +62,12 @@ class RestoreOs(object):
         """
         swift = self.client_manager.get_swift()
         glance = self.client_manager.get_glance()
-        info = self._get_backups(path, restore_from_timestamp)
-        # the db search return a dictionary, how to initialize backup class
-        backup = db_backup.Backup(**info)
+        backup = self._get_backups(path, restore_from_timestamp)
         if self.storage.type == 'ceph':
             info = self.storage.get_header(backup)
-            path = "{0}_{1}".format(path, backup.backup_id)
+            path = "{0}/{1}_{2}".format(self.container, path, backup.backup_id)
             images = list(glance.images.list(filters=
-                                             {"name":"restore_{}".format(info['X-Object-Manifest'])}))
+                                             {"name":"restore_{0}".format(path)}))
             if images and images[0]['status'] == 'active':
                 return info, images[0]
             else:
