@@ -124,29 +124,28 @@ class BackupJob(Job):
         self.conf.time_stamp = utils.DateTime.now().timestamp
 
         backup = None
-        kwargs = {
-            'curr_backup_level': 0,
-            'client_os': sys.platform,
-            'project_id': self.conf.project_id,
-            'description': self.conf.description,
-            'client_version': self.conf.__version__,
-            'time_stamp': self.conf.time_stamp,
-            'end_time_stamp': self.conf.time_stamp,
-            'action': self.conf.action,
-            'always_level': self.conf.always_level,
-            'backup_name': self.conf.backup_name,
-            'hostname_backup_name': self.conf.hostname_backup_name,
-            'container': self.conf.container,
-            'hostname': self.conf.hostname,
-            'storage': self.conf.storage,
-            'mode': self.conf.mode,
-            'size': 0,
-            'status': db.BackupStatus.CREATING,
-            'compression': self.conf.compression,
-            'consistency_checksum': self.conf.consistency_checksum,
-        }
-
         try:
+            kwargs = {
+                'curr_backup_level': 0,
+                'client_os': sys.platform,
+                'project_id': self.conf.project_id,
+                'description': self.conf.description,
+                'client_version': self.conf.__version__,
+                'time_stamp': self.conf.time_stamp,
+                'end_time_stamp': self.conf.time_stamp,
+                'action': self.conf.action,
+                'always_level': self.conf.always_level,
+                'backup_name': self.conf.backup_name,
+                'hostname_backup_name': self.conf.hostname_backup_name,
+                'container': self.conf.container,
+                'hostname': self.conf.hostname,
+                'storage': self.conf.storage,
+                'mode': self.conf.mode,
+                'size': 0,
+                'status': db.BackupStatus.CREATING,
+                'compression': self.conf.compression,
+                'consistency_checksum': self.conf.consistency_checksum,
+            }
             backup = db.Backup(**kwargs)
             backup.create()
             self.backup(app_mode, backup)
@@ -154,11 +153,11 @@ class BackupJob(Job):
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
-
-            backup.status = db.BackupStatus.ERROR
-            backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
-            backup.end_time_stamp = utils.DateTime.now().timestamp
-            backup.save()
+            if backup and 'backup_id' in backup:
+                backup.status = db.BackupStatus.ERROR
+                backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
+                backup.end_time_stamp = utils.DateTime.now().timestamp
+                backup.save()
 
         backup.status = db.BackupStatus.AVAILABLE
         backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
