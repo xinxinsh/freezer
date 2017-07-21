@@ -156,7 +156,7 @@ def get_client_manager(backup_args):
     else:
         options = osclients.OpenstackOpts.create_from_env().get_opts_dicts()
 
-    if "os_token" in backup_args:
+    if backup_args.get('os_token'):
         options.pop('username', None)
         options.pop('password', None)
         options.pop('user_domain_name', None)
