@@ -131,7 +131,7 @@ class Backup(base.VersionedObject):
                             < from_timestamp, backups))
             backup = backups[-1]
         backup['backup_metadata']['backup_id'] = backup['backup_id']
-        return backup
+        return cls._from_db_backup(cls(), backup)
 
     def save(self):
         updates = self.obj_get_changes()
