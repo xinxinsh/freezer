@@ -152,8 +152,9 @@ class Backup(base.VersionedObject):
 
     @staticmethod
     def _from_db_backup(backup, db_backup):
+        backup_meta = db_backup.get('backup_metadata', {})
         for name, field in backup.fields.items():
-            value = db_backup.get(name)
+            value = backup_meta.get(name)
             if isinstance(field, fields.IntegerField):
                 value = value if value is not None else 0
             backup[name] = value
