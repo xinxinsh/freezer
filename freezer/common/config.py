@@ -716,6 +716,7 @@ def config(args=[]):
     CONF.register_opts(get_osclient_opts())
     CONF.register_cli_opts(_COMMON)
     CONF.register_cli_opts(_CEPH_OPTS)
+    CONF.register_cli_opts(get_osclient_opts())
     log.register_options(CONF)
     CONF(args=args,
          project='freezer',
