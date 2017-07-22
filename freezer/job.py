@@ -26,6 +26,7 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
+from freezer.openstack import backup
 from freezer.openstack import restore
 from freezer.utils import exec_cmd
 from freezer.utils import utils
@@ -166,10 +167,10 @@ class BackupJob(Job):
 
         return backup.to_primitive()
 
-    def backup(self, app_mode, backup):
+    def backup(self, app_mode, db_backup):
         """
         :param app_mode: freezer.mode.mode.Mode
-        :param backup: backup dict
+        :param db_backup: backup dict
         :return:
         """
         backup_media = self.conf.backup_media
@@ -183,7 +184,7 @@ class BackupJob(Job):
             backup_meta = backup_os.backup_nova(self.conf.nova_inst_id,
                                                 name=self.conf.backup_name,
                                                 incremental=self.conf.incremental,
-                                                backup=backup)
+                                                backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
         elif backup_media == 'cindernative' or backup_media == 'cinder':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
@@ -192,7 +193,7 @@ class BackupJob(Job):
             backup_meta = backup_os.backup_cinder(self.conf.cindernative_vol_id,
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
-                                                  backup=backup)
+                                                  backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
@@ -201,7 +202,7 @@ class BackupJob(Job):
             backup_os.backup_trove(self.conf.trove_instance_id,
                                    name=self.conf.backup_name,
                                    incremental=self.conf.incremental,
-                                   backup=backup)
+                                   backup=db_backup)
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return backup_meta
