@@ -241,7 +241,8 @@ class RestoreOs(object):
                      backup_nova_name=None, backup_flavor_id=None):
         """
         :param instance_id: id of attached nova instance
-        :param backup:
+        :param backup: wrapper of db record
+        :type backup: 
         :param nova_network: id of network
         :param backup_nova_name:
         :param backup_flavor_id:
@@ -293,15 +294,15 @@ class RestoreOs(object):
                        message="Wait for instance {0} to become active".format(new_instance_id))
         return
 
-    def rollback_nova(self, instance_id, restore_from_timestamp):
+    def rollback_nova(self, instance_id, backup):
         """
-        :param restore_from_timestamp:
-        :type restore_from_timestamp: int
         :param instance_id: id of attached nova instance
+        :param backup: wrapper of db record
+        :type backup: 
         :return:
         """
         nova = self.client_manager.get_nova()
-        (info, image) = self._create_image(instance_id, restore_from_timestamp)
+        (info, image) = self._create_image(instance_id, backup)
 
         LOG.info("Rollback instance, id: %s", instance_id)
         try:
@@ -320,11 +321,11 @@ class RestoreOs(object):
                        message="Wait for instance {0} to become active".format(instance_id))
         return
 
-    def model_nova(self, instance_id, restore_from_timestamp):
+    def model_nova(self, instance_id, backup):
         """
         :param instance_id: id of attached nova instance
-        :param restore_from_timestamp:
-        :type restore_from_timestamp: int
+        :param backup: wrapper of db record
+        :type backup: 
         :return:
         """
-        return self._create_image(instance_id, restore_from_timestamp)
+        return self._create_image(instance_id, backup )
