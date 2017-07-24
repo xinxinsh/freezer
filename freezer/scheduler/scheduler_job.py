@@ -331,9 +331,9 @@ class Job(object):
             LOG.error('metrics upload error: {0}'.format(e))
 
     def execute_job_action(self, job_action):
-        token = self.job_doc['token'] 
         max_tries = (job_action.get('max_retries', 0) + 1)
         tries = max_tries
+        token = job_action.get('token', None)
         freezer_action = job_action.get('freezer_action', {})
         project_id = freezer_action.get('project_id', None)
         max_retries_interval = job_action.get('max_retries_interval', 60)
@@ -343,8 +343,8 @@ class Job(object):
             with tempfile.NamedTemporaryFile(delete=False) as config_file:
                 self.save_action_to_file(freezer_action, config_file)
                 config_file_name = config_file.name
-                freezer_command = '{0} --metadata-out - --config {1} --os-project-id {2} --os-token {3}'.\
-                    format(self.executable, config_file.name, project_id, token)
+                freezer_command = '{0} --metadata-out - --config {1} --os-project-id {2} --os-token {3} --os-auth-url {4}'.\
+                    format(self.executable, config_file.name, project_id, token, CONF.os_auth_url)
                 self.process = subprocess.Popen(freezer_command.split(),
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.PIPE,

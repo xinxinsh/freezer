@@ -171,8 +171,9 @@ class FreezerScheduler(object):
         for job_doc in work_job_doc_list:
             job_id = job_doc['job_id']
             work_job_id_list.append(job_id)
-            if job_doc['job_schedule']['status'] == 'completed':
-               continue
+            if job_doc['job_schedule'].has_key('status'):
+                if job_doc['job_schedule']['status'] == 'completed':
+                    continue
             job = self.jobs.get(job_id, None) or self.create_job(job_doc)
             if job:
                 # check for abort status
