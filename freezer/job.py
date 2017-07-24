@@ -26,8 +26,8 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
-from freezer.openstack import backup_service
-from freezer.openstack import restore_service
+from freezer.openstack import backup as backup_service
+from freezer.openstack import restore as restore_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
@@ -67,11 +67,6 @@ class Job(object):
         if not self.conf.action:
             raise ValueError("Please provide a valid action with --action")
 
-        if self.conf.action in ('backup', 'restore', 'admin') \
-                and self.conf.backup_media == 'fs' \
-                and not self.conf.backup_name:
-            raise ValueError('A value for --backup-name is required')
-
     @abc.abstractmethod
     def execute(self):
         pass
@@ -107,7 +102,18 @@ class InfoJob(Job):
 class BackupJob(Job):
 
     def _validate(self):
-        pass
+        if self.conf.backup_media == 'nova' \
+                and not self.conf.nova_inst_id:
+            raise ValueError(" --nova_inst_id should be set")
+        elif self.conf.backup_media == 'cindernative' \
+                and not self.conf.cindernative_vol_id:
+            raise ValueError("--cindernative_vol_id should be set")
+        elif self.conf.backup_media == 'trove' \
+                and not self.conf.trove_instance_id:
+            raise ValueError("--trove_instance_id should be set")
+
+        if not self.conf.container:
+            raise ValueError("--container is required")
 
     def execute(self):
         LOG.info('Backup job started. '
@@ -186,7 +192,7 @@ class BackupJob(Job):
                                                 incremental=self.conf.incremental,
                                                 backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
-        elif backup_media == 'cindernative' or backup_media == 'cinder':
+        elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
                                                self.conf.incremental))
@@ -211,7 +217,7 @@ class BackupJob(Job):
 class RestoreJob(Job):
 
     def _validate(self):
-        if self.conf.bakcup_media == 'nova' \
+        if self.conf.backup_media == 'nova' \
                 and not self.conf.nova_inst_id \
                 and not self.nova_backup_id:
             raise ValueError("either --nova_inst_id or --nova_backp_id should be set")
@@ -234,28 +240,26 @@ class RestoreJob(Job):
 
     def execute(self):
         LOG.info('Executing Restore...')
-
-        backup = None
-        source_id = None
         backup_media = self.conf.backup_media
-        
-        if backup_media = 'nova':
+
+        source_id = None
+        if backup_media == 'nova':
             source_id = self.conf.nova_inst_id
-        elif backup_media = 'cindernative':
+        elif backup_media == 'cindernative':
             source_id = self.conf.cindernative_vol_id
-        elif backup_media = 'trove':
+        elif backup_media == 'trove':
             source_id = self.conf.trove_instance_id
         else:
             raise Exception("unknown backup type: %s" % self.conf.backup_media)
-            
+
         restore_timestamp = None
         if self.conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
-            backup = db.Backup.get_latest_backup(self.conf.nova_inst_id, restore_timestamp)
+            backup = db.Backup.get_latest_backup(source_id, restore_timestamp)
         res = restore_service.RestoreOs(self.conf.client_manager,
                                         self.conf.container,
                                         self.storage)
-
+        backup = None
         if backup_media == 'nova':
             backup = db.Backup.get_by_id(self.conf.nova_backup_id)
             if backup:
@@ -273,17 +277,17 @@ class RestoreJob(Job):
         if backup_media == 'nova':
             if self.conf.is_rollback:
                 LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, restore_timestamp))
-                res.rollback_nova(self.conf.nova_inst_id, restore_timestamp)
+                         .format(self.conf.nova_inst_id, backup.time_stamp ))
+                res.rollback_nova(self.conf.nova_inst_id, backup)
             elif self.conf.is_template:
                 LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, restore_timestamp))
-                res.model_nova(self.conf.nova_inst_id, restore_timestamp)
+                         .format(self.conf.nova_inst_id, backup.time_stamp))
+                res.model_nova(self.conf.nova_inst_id, backup)
             else:
                 LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
                          "network-id: {2}, backup-nova-name: {3}, "
                          "backup-flavor-id: {4}".format(self.conf.nova_inst_id,
-                                                        restore_timestamp,
+                                                        backup.time_stamp,
                                                         self.conf.nova_restore_network,
                                                         self.conf.backup_nova_name,
                                                         self.conf.backup_flavor_id))
@@ -359,7 +363,3 @@ class ExecJob(Job):
             LOG.warning(
                 'No command info options were set. Exiting.')
         return {}
-
-
-class ConsistencyCheckException(Exception):
-    pass
