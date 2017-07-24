@@ -54,6 +54,7 @@ _DEFAULT_LOGGING_CONTEXT_FORMAT = (
 
 DEFAULT_PARAMS = {
     'os_identity_api_version': None,
+    'sql_server_conf': None,
     'backup_name': None,
     'quiet': False,
     'container': 'freezer_backups',
@@ -110,6 +111,11 @@ DEFAULT_PARAMS = {
     'cindernative_dest_id': None,
     'cindernative_volume_type':None,
     'trove_backup_id': None,
+    'exclude': None,
+    'dry_run': False,
+    'encrypt_pass_file': None,
+    'dereference_symlink': None,
+    'engine_name': 'tar'
 }
 
 _COMMON = [
@@ -134,6 +140,19 @@ _COMMON = [
                     "(filesystem),mongo (MongoDB), mysql (MySQL), sqlserver "
                     "(SQL Server), cinder(OpenStack Volume), nova "
                     "(OpenStack Instance). Default set to fs"),
+    cfg.StrOpt('engine',
+               short='e',
+               choices=['tar', 'rsync'],
+               dest='engine_name',
+               default=DEFAULT_PARAMS['engine_name'],
+               help="Engine to be used for backup/restore. "
+                    "With tar, the file inode will be checked for changes "
+                    "amid backup execution. If the file inode changed, the "
+                    "whole file will be backed up. With rsync, the data "
+                    "blocks changes will be verified and only the changed "
+                    "blocks will be backed up. Tar is faster, but is uses "
+                    "more space and bandwidth. Rsync is slower, but uses "
+                    "less space and bandwidth."),
     cfg.StrOpt('container',
                short='C',
                default=DEFAULT_PARAMS['container'],

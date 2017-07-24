@@ -67,11 +67,6 @@ class Job(object):
         if not self.conf.action:
             raise ValueError("Please provide a valid action with --action")
 
-        if self.conf.action in ('backup', 'restore', 'admin') \
-                and self.conf.backup_media == 'fs' \
-                and not self.conf.backup_name:
-            raise ValueError('A value for --backup-name is required')
-
     @abc.abstractmethod
     def execute(self):
         pass
@@ -107,7 +102,7 @@ class InfoJob(Job):
 class BackupJob(Job):
 
     def _validate(self):
-        if self.conf.bakcup_media == 'nova' \
+        if self.conf.backup_media == 'nova' \
                 and not self.conf.nova_inst_id:
             raise ValueError(" --nova_inst_id should be set")
         elif self.conf.backup_media == 'cindernative' \
@@ -222,7 +217,7 @@ class BackupJob(Job):
 class RestoreJob(Job):
 
     def _validate(self):
-        if self.conf.bakcup_media == 'nova' \
+        if self.conf.backup_media == 'nova' \
                 and not self.conf.nova_inst_id \
                 and not self.nova_backup_id:
             raise ValueError("either --nova_inst_id or --nova_backp_id should be set")

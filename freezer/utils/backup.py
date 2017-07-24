@@ -22,10 +22,11 @@ from oslo_versionedobjects import base
 
 from freezerclient.v1 import client
 
-Enum = fields.Enum
+
 BaseEnumField = fields.BaseEnumField
-LOG = log.getLogger(__name__)
 CONF = cfg.CONF
+Enum = fields.Enum
+LOG = log.getLogger(__name__)
 
 
 global api
@@ -140,7 +141,7 @@ class Backup(base.VersionedObject):
     def __setitem__(self, name, value):
         setattr(self, name, value)
 
-    def obj_load_attr(self):
+    def obj_load_attr(self, name):
         pass
 
     def create(self):
@@ -182,8 +183,9 @@ class Backup(base.VersionedObject):
     def to_primitive(self):
         primitive = dict()
         for name, field in self.fields.items():
-            primitive[name] = field.primitive(self, name,
-                                              getattr(self, name))
+            if self.obj_attr_is_set(name):
+                primitive[name] = field.to_primitive(self, name,
+                                                     getattr(self, name))
         return primitive
 
     @staticmethod

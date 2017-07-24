@@ -35,8 +35,7 @@ class RestoreOs(object):
     def _create_image(self, path, backup):
         """
         :param path:
-        :param restore_from_timestamp:
-        :type restore_from_timestamp: int
+        :param backup:
         :return:
         """
         swift = self.client_manager.get_swift()
@@ -133,6 +132,8 @@ class RestoreOs(object):
         Restoring cinder backup using
         :param volume_id:
         :param backup_id:
+        :param dest_volume_id:
+        :param volume_type:
         :param restore_from_timestamp:
         :return:
         """
@@ -165,8 +166,8 @@ class RestoreOs(object):
                                 volume_type=volume_type)
 
     def restore_trove(self, instance=None,
-                       backup_id=None,
-                       restore_from_timestamp=None):
+                      backup_id=None,
+                      restore_from_timestamp=None):
         """
         Restoring trove backup using
         :param instance:
@@ -239,13 +240,11 @@ class RestoreOs(object):
     def restore_nova(self, instance_id, backup, nova_network=None,
                      backup_nova_name=None, backup_flavor_id=None):
         """
-        :param restore_from_timestamp:
-        :type restore_from_timestamp: int
         :param instance_id: id of attached nova instance
+        :param backup:
         :param nova_network: id of network
         :param backup_nova_name:
         :param backup_flavor_id:
-        :param nova_backup_id:
         :return:
         """
         # TODO(yangyapeng): remove nova_network check use nova api,
@@ -285,6 +284,7 @@ class RestoreOs(object):
 
         new_instance_id = instance.__dict__['id']
         LOG.info('Wait instance to become active')
+
         def instance_finish_task():
             instance = nova.servers.get(new_instance_id)
             return not instance.__dict__['OS-EXT-STS:task_state']
@@ -311,6 +311,7 @@ class RestoreOs(object):
             raise Exception("Rollback instance failed")
 
         LOG.info('Wait for instance to become active')
+
         def instance_finish_task():
             instance = nova.servers.get(instance_id)
             return not instance.__dict__['OS-EXT-STS:task_state']

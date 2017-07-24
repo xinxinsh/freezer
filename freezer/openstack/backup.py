@@ -54,7 +54,6 @@ class BackupOs(object):
         if backup:
             backup_id = backup.backup_id
 
-
         def instance_finish_task():
             instance = nova.servers.get(instance_id)
             return not instance.__dict__['OS-EXT-STS:task_state']
@@ -67,8 +66,6 @@ class BackupOs(object):
         connection_info = nova.servers.connection_info(instance_id)._info
         if backup is not None:
             backup.source_id = instance_id
-            #dummy value, pls, revise this value properly
-            #backup.is_incremental = False
             backup.save()
 
         nova.servers.update_task(instance_id, 'image_backuping')
@@ -120,7 +117,6 @@ class BackupOs(object):
 
         if backup is not None:
             backup.source_id = volume_id
-            #backup.is_incremental = incremental
             backup.save()
 
         if incremental:
@@ -153,7 +149,6 @@ class BackupOs(object):
 
         if backup is not None:
             backup.source_id = instance
-            #backup.is_incremental = incremental
             backup.save()
 
         if incremental:
