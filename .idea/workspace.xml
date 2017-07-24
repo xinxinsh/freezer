@@ -54,8 +54,8 @@
       <file leaf-file-name="job.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/freezer/job.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-718">
-              <caret line="224" column="55" selection-start-line="224" selection-start-column="55" selection-end-line="224" selection-end-column="55" />
+            <state relative-caret-position="156">
+              <caret line="239" column="8" selection-start-line="239" selection-start-column="8" selection-end-line="239" selection-end-column="8" />
               <folding>
                 <element signature="e#670#680#0" expanded="true" />
               </folding>
@@ -66,8 +66,8 @@
       <file leaf-file-name="restore.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/openstack/restore.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4807">
-              <caret line="258" column="8" selection-start-line="258" selection-start-column="8" selection-end-line="258" selection-end-column="8" />
+            <state relative-caret-position="4408">
+              <caret line="237" column="0" selection-start-line="237" selection-start-column="0" selection-end-line="237" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -1006,8 +1006,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/openstack/restore.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4807">
-          <caret line="258" column="8" selection-start-line="258" selection-start-column="8" selection-end-line="258" selection-end-column="8" />
+        <state relative-caret-position="4408">
+          <caret line="237" column="0" selection-start-line="237" selection-start-column="0" selection-end-line="237" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -1024,8 +1024,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/job.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-718">
-          <caret line="224" column="55" selection-start-line="224" selection-start-column="55" selection-end-line="224" selection-end-column="55" />
+        <state relative-caret-position="156">
+          <caret line="239" column="8" selection-start-line="239" selection-start-column="8" selection-end-line="239" selection-end-column="8" />
           <folding>
             <element signature="e#670#680#0" expanded="true" />
           </folding>
