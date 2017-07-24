@@ -211,11 +211,16 @@ class BackupJob(Job):
 class RestoreJob(Job):
 
     def _validate(self):
-        if not self.conf.restore_abs_path and not self.conf.nova_inst_id \
-                and not self.conf.cinder_vol_id and not \
-                self.conf.cindernative_vol_id and not \
-                self.conf.trove_instance_id:
-            raise ValueError("--restore-abs-path is required")
+        if self.conf.bakcup_media == 'nova' and not self.conf.nova_inst_id \
+                and not self.nova_backup_id:
+            raise ValueError("either --nova_inst_id or --nova_backp_id should be set")
+        elif self.conf.backup_media == 'cindernative' and not self.conf.cindernative_vol_id \
+                and not self.conf.cindernative_backup_id:
+            raise ValueError("either --cindernative_vol_id or --cindernative_backup_id should be set")
+        elif self.conf.backup_media == 'trove' and not self.conf.trove_instance_id \
+                and not self.conf.trove_backup_id:
+            raise ValueError("either --trove_instance_id or --trove_backup_id should be set")
+
         if not self.conf.container:
             raise ValueError("--container is required")
         if self.conf.no_incremental and (self.conf.max_level or
