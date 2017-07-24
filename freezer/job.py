@@ -232,12 +232,17 @@ class RestoreJob(Job):
         restore_timestamp = None
         if conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(conf.restore_from_date)
+            backup = db.Backup.get_latest_backup(conf.nova_inst_id, restore_timestamp)
         res = restore.RestoreOs(conf.client_manager, conf.container,
                                 self.storage)
 
         backup = None
         if backup_media == 'nova':
             backup = db.Backup.get_by_id(conf.nova_backup_id)
+            if backup:
+                restore_timestamp = backup.time_stamp
+            else:
+                raise ValueError("backup id does not exist".format(conf.nova_backup_id))
         elif backup_media == 'cindernative' or backup_media == 'cinder':
             backup = db.Backup.get_by_id(conf.cindernative_backup_id)
         elif backup_media == 'trove':
@@ -262,10 +267,10 @@ class RestoreJob(Job):
                                 conf.nova_restore_network,conf.backup_nova_name,
                                 conf.backup_flavor_id))
 
-                res.restore_nova(conf.nova_inst_id, restore_timestamp,
-                                 conf.nova_restore_network, conf.backup_nova_name,
-                                 conf.backup_flavor_id,
-                                 conf.nova_backup_id)
+                res.restore_nova(conf.nova_inst_id, backup, 
+                                 conf.nova_restore_network,
+                                 conf.backup_nova_name,
+                                 conf.backup_flavor_id)
         elif backup_media == 'cindernative' or backup_media == 'cinder' :
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
                      " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,
