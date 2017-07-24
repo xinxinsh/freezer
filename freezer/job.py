@@ -236,8 +236,18 @@ class RestoreJob(Job):
         LOG.info('Executing Restore...')
 
         backup = None
+        source_id = None
         backup_media = self.conf.backup_media
         
+        if backup_media = 'nova':
+            source_id = self.conf.nova_inst_id
+        elif backup_media = 'cindernative':
+            source_id = self.conf.cindernative_vol_id
+        elif backup_media = 'trove':
+            source_id = self.conf.trove_instance_id
+        else:
+            raise Exception("unknown backup type: %s" % self.conf.backup_media)
+            
         restore_timestamp = None
         if self.conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
