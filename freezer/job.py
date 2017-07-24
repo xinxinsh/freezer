@@ -26,8 +26,8 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
-from freezer.openstack import backup_service
-from freezer.openstack import restore_service
+from freezer.openstack import backup as backup_service
+from freezer.openstack import restore as restore_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
