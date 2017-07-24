@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d51f94d3-2b6d-4b60-8415-4b27c6045e1f" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="DELETED" beforePath="$PROJECT_DIR$/../freezer-api/bindep.txt" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/job.py" afterPath="$PROJECT_DIR$/freezer/job.py" />
     </list>
@@ -49,8 +50,8 @@
       <file leaf-file-name="job.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/freezer/job.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2908">
-              <caret line="308" column="83" selection-start-line="308" selection-start-column="83" selection-end-line="308" selection-end-column="83" />
+            <state relative-caret-position="1065">
+              <caret line="169" column="67" selection-start-line="169" selection-start-column="67" selection-end-line="169" selection-end-column="67" />
               <folding>
                 <element signature="e#670#680#0" expanded="true" />
               </folding>
@@ -988,8 +989,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/freezer/job.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2908">
-          <caret line="308" column="83" selection-start-line="308" selection-start-column="83" selection-end-line="308" selection-end-column="83" />
+        <state relative-caret-position="1065">
+          <caret line="169" column="67" selection-start-line="169" selection-start-column="67" selection-end-line="169" selection-end-column="67" />
           <folding>
             <element signature="e#670#680#0" expanded="true" />
           </folding>
