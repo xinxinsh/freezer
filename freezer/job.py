@@ -26,8 +26,8 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
-from freezer.openstack import backup
-from freezer.openstack import restore
+from freezer.openstack import backup_service
+from freezer.openstack import restore_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
@@ -174,9 +174,9 @@ class BackupJob(Job):
         :return:
         """
         backup_media = self.conf.backup_media
-        backup_os = backup.BackupOs(self.conf.client_manager,
-                                    self.conf.container,
-                                    self.storage)
+        backup_os = backup_service.BackupOs(self.conf.client_manager,
+                                            self.conf.container,
+                                            self.storage)
         backup_meta = None
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
@@ -211,13 +211,16 @@ class BackupJob(Job):
 class RestoreJob(Job):
 
     def _validate(self):
-        if self.conf.bakcup_media == 'nova' and not self.conf.nova_inst_id \
+        if self.conf.bakcup_media == 'nova' \
+                and not self.conf.nova_inst_id \
                 and not self.nova_backup_id:
             raise ValueError("either --nova_inst_id or --nova_backp_id should be set")
-        elif self.conf.backup_media == 'cindernative' and not self.conf.cindernative_vol_id \
+        elif self.conf.backup_media == 'cindernative' \
+                and not self.conf.cindernative_vol_id \
                 and not self.conf.cindernative_backup_id:
             raise ValueError("either --cindernative_vol_id or --cindernative_backup_id should be set")
-        elif self.conf.backup_media == 'trove' and not self.conf.trove_instance_id \
+        elif self.conf.backup_media == 'trove' \
+                and not self.conf.trove_instance_id \
                 and not self.conf.trove_backup_id:
             raise ValueError("either --trove_instance_id or --trove_backup_id should be set")
 
@@ -232,71 +235,74 @@ class RestoreJob(Job):
     def execute(self):
         LOG.info('Executing Restore...')
 
-        conf = self.conf
-        backup_media = conf.backup_media
-        restore_timestamp = None
-        if conf.restore_from_date:
-            restore_timestamp = utils.date_to_timestamp(conf.restore_from_date)
-            backup = db.Backup.get_latest_backup(conf.nova_inst_id, restore_timestamp)
-        res = restore.RestoreOs(conf.client_manager, conf.container,
-                                self.storage)
-
         backup = None
+        backup_media = self.conf.backup_media
+
+        restore_timestamp = None
+        if self.conf.restore_from_date:
+            restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
+            backup = db.Backup.get_latest_backup(self.conf.nova_inst_id, restore_timestamp)
+        res = restore_service.RestoreOs(self.conf.client_manager,
+                                        self.conf.container,
+                                        self.storage)
+
         if backup_media == 'nova':
-            backup = db.Backup.get_by_id(conf.nova_backup_id)
+            backup = db.Backup.get_by_id(self.conf.nova_backup_id)
             if backup:
                 restore_timestamp = backup.time_stamp
             else:
-                raise ValueError("backup id does not exist".format(conf.nova_backup_id))
-        elif backup_media == 'cindernative' or backup_media == 'cinder':
-            backup = db.Backup.get_by_id(conf.cindernative_backup_id)
+                raise ValueError("backup id does not exist".format(self.conf.nova_backup_id))
+        elif backup_media == 'cindernative':
+            backup = db.Backup.get_by_id(self.conf.cindernative_backup_id)
         elif backup_media == 'trove':
-            backup = db.Backup.get_by_id(conf.trove_backup_id)
+            backup = db.Backup.get_by_id(self.conf.trove_backup_id)
         if backup is not None:
             backup.status = db.BackupStatus.RESTORING
             backup.save()
 
         if backup_media == 'nova':
-            if conf.is_rollback:
+            if self.conf.is_rollback:
                 LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
-                         .format(conf.nova_inst_id, restore_timestamp))
-                res.rollback_nova(conf.nova_inst_id, restore_timestamp)
-            elif conf.is_template:
+                         .format(self.conf.nova_inst_id, restore_timestamp))
+                res.rollback_nova(self.conf.nova_inst_id, restore_timestamp)
+            elif self.conf.is_template:
                 LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
-                         .format(conf.nova_inst_id, restore_timestamp))
-                res.model_nova(conf.nova_inst_id, restore_timestamp)
+                         .format(self.conf.nova_inst_id, restore_timestamp))
+                res.model_nova(self.conf.nova_inst_id, restore_timestamp)
             else:
                 LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
-                        "network-id: {2}, backup-nova-name: {3}, "
-                        "backup-flavor-id: {4}".format(conf.nova_inst_id, restore_timestamp,
-                                conf.nova_restore_network,conf.backup_nova_name,
-                                conf.backup_flavor_id))
+                         "network-id: {2}, backup-nova-name: {3}, "
+                         "backup-flavor-id: {4}".format(self.conf.nova_inst_id,
+                                                        restore_timestamp,
+                                                        self.conf.nova_restore_network,
+                                                        self.conf.backup_nova_name,
+                                                        self.conf.backup_flavor_id))
 
-                res.restore_nova(conf.nova_inst_id, backup, 
-                                 conf.nova_restore_network,
-                                 conf.backup_nova_name,
-                                 conf.backup_flavor_id)
-        elif backup_media == 'cindernative' or backup_media == 'cinder' :
+                res.restore_nova(self.conf.nova_inst_id, backup,
+                                 self.conf.nova_restore_network,
+                                 self.conf.backup_nova_name,
+                                 self.conf.backup_flavor_id)
+        elif backup_media == 'cindernative':
             LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
-                     " {1}, Dest Volume ID {2}, timestamp: {3}".format(conf.cindernative_vol_id,
-                                                                       conf.cindernative_backup_id,
-                                                                       conf.cindernative_dest_id,
+                     " {1}, Dest Volume ID {2}, timestamp: {3}".format(self.conf.cindernative_vol_id,
+                                                                       self.conf.cindernative_backup_id,
+                                                                       self.conf.cindernative_dest_id,
                                                                        restore_timestamp))
-            res.restore_cinder(volume_id=conf.cindernative_vol_id,
-                               backup_id=conf.cindernative_backup_id,
-                               dest_volume_id=conf.cindernative_dest_id,
-                               volume_type=conf.cindernative_volume_type,
+            res.restore_cinder(volume_id=self.conf.cindernative_vol_id,
+                               backup_id=self.conf.cindernative_backup_id,
+                               dest_volume_id=self.conf.cindernative_dest_id,
+                               volume_type=self.conf.cindernative_volume_type,
                                restore_from_timestamp=restore_timestamp)
         elif backup_media == 'trove':
             LOG.info("Restoring cinde backup. Instance ID {0}, Backup ID"
-                     " {1},  timestamp: {2}".format(conf.trove_instance_id,
-                                                    conf.trove_backup_id,
+                     " {1},  timestamp: {2}".format(self.conf.trove_instance_id,
+                                                    self.conf.trove_backup_id,
                                                     restore_timestamp))
-            res.restore_trove(conf.trove_instance_id,
-                              conf.trove_backup_id,
+            res.restore_trove(self.conf.trove_instance_id,
+                              self.conf.trove_backup_id,
                               restore_timestamp)
         else:
-            raise Exception("unknown backup type: %s" % conf.backup_media)
+            raise Exception("unknown backup type: %s" % self.conf.backup_media)
         if backup is not None:
             backup.status = db.BackupStatus.AVAILABLE
             backup.save()
@@ -343,7 +349,3 @@ class ExecJob(Job):
             LOG.warning(
                 'No command info options were set. Exiting.')
         return {}
-
-
-class ConsistencyCheckException(Exception):
-    pass

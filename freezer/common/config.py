@@ -54,35 +54,21 @@ _DEFAULT_LOGGING_CONTEXT_FORMAT = (
 
 DEFAULT_PARAMS = {
     'os_identity_api_version': None,
-    'lvm_auto_snap': None,
-    'lvm_volgroup': None,
-    'exclude': None,
-    'sql_server_conf': False,
     'backup_name': None,
     'quiet': False,
     'container': 'freezer_backups',
     'no_incremental': None,
     'max_segment_size': 33554432,
-    'lvm_srcvol': None,
     'download_limit': -1,
     'hostname': None,
     'remove_from_date': None,
     'restart_always_level': False,
-    'lvm_dirmount': None,
-    'dereference_symlink': None,
     'config': None,
     'osrc': '/root/admin-openrc',
     'mysql_conf': False,
     'insecure': False,
-    'lvm_snapname': None,
-    'lvm_snapperm': 'ro',
-    'snapshot': None,
     'max_priority': None,
     'max_level': False,
-    'path_to_backup': None,
-    'encrypt_pass_file': None,
-    'volume': None,
-    'proxy': None,
     'cinder_vol_id': '',
     'cindernative_vol_id': '',
     'trove_instance_id': '',
@@ -97,16 +83,10 @@ DEFAULT_PARAMS = {
     'upload_limit': -1,
     'always_level': False,
     'version': None,
-    'dry_run': False,
-    'lvm_snapsize': DEFAULT_LVM_SNAPSIZE,
-    'restore_abs_path': None,
     'log_file': None,
     'log_level': "info",
     'mode': 'fs',
     'action': 'backup',
-    'shadow': '',
-    'shadow_path': '',
-    'windows_volume': '',
     'command': None,
     'metadata_out': None,
     'storage': 'ceph',
@@ -117,10 +97,6 @@ DEFAULT_PARAMS = {
     'backup_ceph_stripe_unit':  0,
     'backup_ceph_stripe_count': 0,
     'restore_discard_excess_bytes': True,
-    'ssh_key': '',
-    'ssh_username': '',
-    'ssh_host': '',
-    'ssh_port': DEFAULT_SSH_PORT,
     'compression': None,
     'overwrite': False,
     'incremental': None,
@@ -134,8 +110,6 @@ DEFAULT_PARAMS = {
     'cindernative_dest_id': None,
     'cindernative_volume_type':None,
     'trove_backup_id': None,
-    'sync': True,
-    'engine_name': 'tar'
 }
 
 _COMMON = [
@@ -146,20 +120,12 @@ _COMMON = [
                     "explanatory, info is used to retrieve info from the "
                     "storage media, exec is used to execute a script, while "
                     "admin is used to delete old backups and other admin "
-                    "actions. Default backup."
-               ),
-    cfg.StrOpt('path-to-backup',
-               short='F',
-               dest='path_to_backup',
-               default=DEFAULT_PARAMS['path_to_backup'],
-               help='The file or directory you want to back up to Swift'
-               ),
+                    "actions. Default backup."),
     cfg.StrOpt('backup-name',
                short='N',
                default=DEFAULT_PARAMS['backup_name'],
                help="The backup name you want to use to identify your backup "
-                    "on Swift"
-               ),
+                    "on Swift"),
     cfg.StrOpt('mode',
                short='m',
                dest='mode',
@@ -168,78 +134,12 @@ _COMMON = [
                     "(filesystem),mongo (MongoDB), mysql (MySQL), sqlserver "
                     "(SQL Server), cinder(OpenStack Volume), nova "
                     "(OpenStack Instance). Default set to fs"),
-    cfg.StrOpt('engine',
-               short='e',
-               choices=['tar', 'rsync'],
-               dest='engine_name',
-               default=DEFAULT_PARAMS['engine_name'],
-               help="Engine to be used for backup/restore. "
-                    "With tar, the file inode will be checked for changes "
-                    "amid backup execution. If the file inode changed, the "
-                    "whole file will be backed up. With rsync, the data "
-                    "blocks changes will be verified and only the changed "
-                    "blocks will be backed up. Tar is faster, but is uses "
-                    "more space and bandwidth. Rsync is slower, but uses "
-                    "less space and bandwidth."
-               ),
     cfg.StrOpt('container',
                short='C',
                default=DEFAULT_PARAMS['container'],
                dest='container',
                help="The Swift container (or path to local storage) used to "
                     "upload files to"),
-    cfg.StrOpt('snapshot',
-               short='s',
-               dest='snapshot',
-               default=DEFAULT_PARAMS['snapshot'],
-               help="Create a snapshot of the fs containing the resource to "
-                    "backup. When used, the lvm parameters will be guessed "
-                    "and/or the  default values will be used, on windows it "
-                    "will invoke  vssadmin"),
-    cfg.BoolOpt('sync',
-                dest='sync',
-                default=DEFAULT_PARAMS['sync'],
-                help="Flush file system buffers. Force changed blocks to disk,"
-                     " update the super block. Default is {0}".format(
-                    DEFAULT_PARAMS['sync']
-                )),
-    cfg.StrOpt('lvm-srcvol',
-               dest='lvm_srcvol',
-               default=DEFAULT_PARAMS['lvm_srcvol'],
-               help="Set the lvm volume you want to take a snapshot from. "
-                    "Default no volume"),
-    cfg.StrOpt('lvm-snapname',
-               dest='lvm_snapname',
-               default=DEFAULT_PARAMS['lvm_snapname'],
-               help="Set the name of the snapshot that will be created."
-                    " If not provided, a unique name will be generated."),
-    cfg.StrOpt('lvm-snap-perm',
-               choices=['ro', 'rw'],
-               dest='lvm_snapperm',
-               default=DEFAULT_PARAMS['lvm_snapperm'],
-               help="Set the lvm snapshot permission to use. If the permission"
-                    " is set to ro The snapshot will be immutable - read only"
-                    " -. If the permission is set to rw it will be mutable"),
-    cfg.StrOpt('lvm-snapsize',
-               dest='lvm_snapsize',
-               default=DEFAULT_PARAMS['lvm_snapsize'],
-               help="Set the lvm snapshot size when creating a new "
-                    "snapshot. Please add G for Gigabytes or "
-                    "M for Megabytes, i.e. 500M or 8G. It is also possible "
-                    "to use percentages as with the -l option of lvm, i.e. "
-                    "80%%FREE Default {0}.".format(DEFAULT_LVM_SNAPSIZE)),
-    cfg.StrOpt('lvm-dirmount',
-               dest='lvm_dirmount',
-               default=DEFAULT_PARAMS['lvm_dirmount'],
-               help="Set the directory you want to mount the lvm snapshot to. "
-                    "If not provided, a unique directory will be generated in "
-                    "{0} ".format(DEFAULT_LVM_MOUNT_BASEDIR)),
-    cfg.StrOpt('lvm-volgroup',
-               dest='lvm_volgroup',
-               default=DEFAULT_PARAMS['lvm_volgroup'],
-               help="Specify the volume group of your logical volume. This is "
-                    "important to mount your snapshot volume. Default not "
-                    "set"),
     cfg.IntOpt('max-level',
                dest='max_level',
                default=DEFAULT_PARAMS['max_level'],
@@ -247,8 +147,7 @@ _COMMON = [
                     "incremental backup. If a level 1 is specified but "
                     "no level 0 is already available, a level 0 will be "
                     "done and subsequently backs to level 1. "
-                    "Default 0 (No Incremental)"
-               ),
+                    "Default 0 (No Incremental)"),
     cfg.IntOpt('always-level',
                dest='always_level',
                default=DEFAULT_PARAMS['always_level'],
@@ -314,40 +213,12 @@ _COMMON = [
                help="Set the filename to which write the metadata "
                     "regarding the backup metrics. Use '-' to output to "
                     "standard output."),
-    cfg.StrOpt('exclude',
-               dest='exclude',
-               default=DEFAULT_PARAMS['exclude'],
-               help="Exclude files,given as a PATTERN.Ex: --exclude '*.log' "
-                    "will exclude any file with name ending with .log. "
-                    "Default no exclude"
-               ),
-    cfg.StrOpt('dereference-symlink',
-               dest='dereference_symlink',
-               default=DEFAULT_PARAMS['dereference_symlink'],
-               choices=[None, 'soft', 'hard', 'all'],
-               help="Follow hard and soft links and archive and dump the files"
-                    " they refer to. Default False."
-               ),
-    cfg.StrOpt('encrypt-pass-file',
-               dest='encrypt_pass_file',
-               default=DEFAULT_PARAMS['encrypt_pass_file'],
-               help="Passing a private key to this option, allow you "
-                    "to encrypt the files before to be uploaded in Swift. "
-                    "Default do not encrypt."
-               ),
     cfg.IntOpt('max-segment-size',
                short='M',
                default=DEFAULT_PARAMS['max_segment_size'],
                dest='max_segment_size',
                help="Set the maximum file chunk size in bytes to upload to "
-                    "swift Default 33554432 bytes (32MB)"
-               ),
-    cfg.StrOpt('restore-abs-path',
-               dest='restore_abs_path',
-               default=DEFAULT_PARAMS['restore_abs_path'],
-               help="Set the absolute path where you want your data restored. "
-                    "Default False."
-               ),
+                    "swift Default 33554432 bytes (32MB)"),
     cfg.StrOpt('restore-from-date',
                dest='restore_from_date',
                default=DEFAULT_PARAMS['restore_from_date'],
@@ -363,8 +234,7 @@ _COMMON = [
                     "be found. "
                     "Please provide datetime in format 'YYYY-MM-DDThh:mm:ss' "
                     "i.e. '1979-10-03T23:23:23'. Make sure the 'T' is between "
-                    "date and time Default None."
-               ),
+                    "date and time Default None."),
     cfg.StrOpt('is-rollback',
                dest='is_rollback',
                default=DEFAULT_PARAMS['is_rollback'],
@@ -381,30 +251,17 @@ _COMMON = [
                help="Set the cpu process to the highest priority (i.e. -20 on "
                     "Linux) and real-time for I/O. The process priority "
                     "will be set only if nice and ionice are installed "
-                    "Default disabled. Use with caution."
-               ),
+                    "Default disabled. Use with caution."),
     cfg.BoolOpt('quiet',
                 short='q',
                 default=DEFAULT_PARAMS['quiet'],
                 dest='quiet',
-                help="Suppress error messages"
-                ),
+                help="Suppress error messages"),
     cfg.BoolOpt('insecure',
                 dest='insecure',
                 default=DEFAULT_PARAMS['insecure'],
                 help='Allow to access swift servers without checking SSL '
                      'certs.'),
-    cfg.StrOpt('proxy',
-               dest='proxy',
-               default=DEFAULT_PARAMS['proxy'],
-               help="Enforce proxy that alters system HTTP_PROXY and "
-                    "HTTPS_PROXY, use \'\' to eliminate all system proxies"
-               ),
-    cfg.BoolOpt('dry-run',
-                dest='dry_run',
-                default=DEFAULT_PARAMS['dry_run'],
-                help="Do everything except writing or removing objects"
-                ),
     cfg.IntOpt('upload-limit',
                dest='upload_limit',
                default=DEFAULT_PARAMS['upload_limit'],
@@ -418,23 +275,19 @@ _COMMON = [
     cfg.StrOpt('cinder-vol-id',
                dest='cinder_vol_id',
                default=DEFAULT_PARAMS['cinder_vol_id'],
-               help="Id of cinder volume for backup"
-               ),
+               help="Id of cinder volume for backup"),
     cfg.StrOpt('cindernative-vol-id',
                dest='cindernative_vol_id',
                default=DEFAULT_PARAMS['cindernative_vol_id'],
-               help="Id of cinder volume for native backup"
-               ),
+               help="Id of cinder volume for native backup"),
     cfg.StrOpt('cindernative-backup-id',
                default=DEFAULT_PARAMS['cindernative_backup_id'],
                dest='cindernative_backup_id',
-               help="Id of the cindernative backup to be restored"
-               ),
+               help="Id of the cindernative backup to be restored"),
     cfg.StrOpt('cindernative-dest-id',
                default=DEFAULT_PARAMS['cindernative_dest_id'],
                dest='cindernative_dest_id',
-               help="Destination volume id of the cindernative restore to"
-               ),
+               help="Destination volume id of the cindernative restore to"),
     cfg.StrOpt('cindernative-volume-type',
                default=DEFAULT_PARAMS['cindernative_volume_type'],
                dest='cindernative_volume_type',
@@ -444,51 +297,42 @@ _COMMON = [
     cfg.StrOpt('trove-instance-id',
                dest='trove_instance_id',
                default=DEFAULT_PARAMS['trove_instance_id'],
-               help="Id of trove volume for  backup"
-               ),
+               help="Id of trove volume for  backup"),
     cfg.StrOpt('trove-backup-id',
                default=DEFAULT_PARAMS['trove_backup_id'],
                dest='trove_backup_id',
-               help="Id of the trove backup to be restored"
-               ),
+               help="Id of the trove backup to be restored"),
     cfg.StrOpt('nova-inst-id',
                dest='nova_inst_id',
                default=DEFAULT_PARAMS['nova_inst_id'],
-               help="Id of nova instance for backup"
-               ),
+               help="Id of nova instance for backup"),
     cfg.StrOpt('nova-backup-id',
                dest='nova_backup_id',
                default=DEFAULT_PARAMS['nova_backup_id'],
-               help='Id of the nova backup to be restored'
-               ),
+               help='Id of the nova backup to be restored'),
      cfg.StrOpt('backup-nova-name',
                dest='backup_nova_name',
                default=DEFAULT_PARAMS['backup_nova_name'],
-               help="Name of nova instance for backup"
-               ),  
+               help="Name of nova instance for backup"),
       cfg.StrOpt('backup-flavor-id',
                dest='backup_flavor_id',
                default=DEFAULT_PARAMS['backup_flavor_id'],
-               help="Id of flavor instance for backup"
-               ), 
+               help="Id of flavor instance for backup"),
     cfg.StrOpt('sql-server-conf',
                dest='sql_server_conf',
                default=DEFAULT_PARAMS['sql_server_conf'],
                help="Set the SQL Server configuration file where freezer "
                     "retrieve the sql server instance. Following is an example"
-                    " of config file: instance = <db-instance>"
-               ),
+                    " of config file: instance = <db-instance>"),
     cfg.StrOpt('command',
                dest='command',
                default=DEFAULT_PARAMS['command'],
-               help="Command executed by exec action"
-               ),
+               help="Command executed by exec action"),
     cfg.StrOpt('compression',
                dest='compression',
                default=DEFAULT_PARAMS['compression'],
                choices=['gzip', 'bzip2', 'xz'],
-               help="Compression algorithm to use. Gzip is default algorithm"
-               ),
+               help="Compression algorithm to use. Gzip is default algorithm"),
     cfg.StrOpt('storage',
                dest='storage',
                default=DEFAULT_PARAMS['storage'],
@@ -496,57 +340,13 @@ _COMMON = [
                help = "Storage for backups. Can be Swift or Local or ceph now. "
                        "Ceph is default storage now. Local stores backups on the "
                        "same defined path and swift will store files in container "
-                       "and Ceph stores files in a RBD Image"
-               ),
-    cfg.StrOpt('ssh-key',
-               dest='ssh_key',
-               default=DEFAULT_PARAMS['ssh_key'],
-               help="Path to ssh-key for ssh storage only"
-               ),
-    cfg.StrOpt('ssh-username',
-               dest='ssh_username',
-               default=DEFAULT_PARAMS['ssh_username'],
-               help="Remote username for ssh storage only"
-               ),
-    cfg.StrOpt('ssh-host',
-               dest='ssh_host',
-               default=DEFAULT_PARAMS['ssh_host'],
-               help="Remote host for ssh storage only"
-               ),
-    cfg.IntOpt('ssh-port',
-               dest='ssh_port',
-               default=DEFAULT_PARAMS['ssh_port'],
-               help="Remote port for ssh storage only (default 22)"
-               ),
+                       "and Ceph stores files in a RBD Image"),
     cfg.StrOpt('config',
                dest='config',
                default=DEFAULT_PARAMS['config'],
                help="Config file abs path. Option arguments are provided from "
                     "config file. When config file is used any option from "
                     "command line provided take precedence."),
-    cfg.BoolOpt('overwrite',
-                dest='overwrite',
-                default=DEFAULT_PARAMS['overwrite'],
-                help='With overwrite removes files from restore path before '
-                     'restore.'),
-    cfg.BoolOpt('consistency-check',
-                dest='consistency_check',
-                default=DEFAULT_PARAMS['consistency_check'],
-                help="Compute the checksum of the fileset before backup. "
-                     "This checksum is stored as part of the backup metadata, "
-                     "which can be obtained either by using --metadata-out or "
-                     "through the freezer API. "
-                     "On restore, it is possible to verify for consistency. "
-                     "Please note this option is currently only available "
-                     "for file system backups. "
-                     "Please also note checking backup consistency is a "
-                     "resource intensive operation, so use it carefully!"),
-    cfg.StrOpt('consistency-checksum',
-               dest='consistency_checksum',
-               default=DEFAULT_PARAMS['consistency_checksum'],
-               help="Compute the checksum of the restored file(s) and compare "
-                    "it to the (provided) checksum to verify that the backup "
-                    "was successful"),
     cfg.BoolOpt('incremental',
                 default=DEFAULT_PARAMS['incremental'],
                 help="When the option is set, freezer will perform a "
@@ -821,27 +621,11 @@ def get_backup_args():
     if not backup_args.hostname:
         backup_args.__dict__['hostname'] = socket.gethostname()
 
-    # If we have provided --proxy then overwrite the system HTTP_PROXY and
-    # HTTPS_PROXY
-    if backup_args.proxy:
-        utils.alter_proxy(backup_args.proxy)
-
     # MySQLdb object
     backup_args.__dict__['mysql_db_inst'] = ''
     backup_args.__dict__['storages'] = None
     if conf and conf.storages:
         backup_args.__dict__['storages'] = conf.storages
-
-    # Windows volume
-    backup_args.__dict__['shadow'] = ''
-    backup_args.__dict__['shadow_path'] = ''
-    backup_args.__dict__['file_name'] = ''
-    if winutils.is_windows():
-        if backup_args.path_to_backup:
-            backup_args.__dict__['windows_volume'] = \
-                backup_args.path_to_backup[:3]
-
-    # TODO(enugaev): move it to new command line param backup_media
 
     backup_media = 'cindernative'
     if backup_args.cindernative_vol_id or backup_args.cindernative_backup_id:
