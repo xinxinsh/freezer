@@ -165,7 +165,7 @@ class Backup(base.VersionedObject):
         backup = backups[-1]
         if from_timestamp:
             backups = list(filter(lambda x: x['backup_metadata']['time_stamp']
-                           < from_timestamp, backups))
+                           <= from_timestamp, backups))
             backup = backups[-1]
         return cls._from_db_backup(cls(), backup)
 
@@ -203,7 +203,7 @@ class Backup(base.VersionedObject):
 
     @classmethod
     def get_by_id(cls, backup_id):
-        db_backup = api_client().get(backup_id)
+        db_backup = api_client().backups.get(backup_id)
         return cls._from_db_backup(cls(), db_backup)
 
 

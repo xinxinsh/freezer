@@ -32,27 +32,7 @@ class RestoreOs(object):
         self.container = container
         self.storage = storage
 
-    def _get_backups(self, path, restore_from_timestamp):
-        """
-        :param path:
-        :type path: str
-        :param restore_from_timestamp:
-        :type restore_from_timestamp: int
-        :return: a backup class that include restore point info
-        """
- 
-        """
-        get all backups from db, and get restore backup based on restore_from_timestamp
-        then get backup object from storage
-        """
-        latest_backup =  db_backup.Backup.get_latest_backup(path, restore_from_timestamp)
-        if not latest_backup:
-            msg = "Cannot find backups for path: %s" % path
-            LOG.error(msg)
-            raise BaseException(msg)
-        return latest_backup
-
-    def _create_image(self, path, restore_from_timestamp):
+    def _create_image(self, path, backup):
         """
         :param path:
         :param restore_from_timestamp:
@@ -61,7 +41,7 @@ class RestoreOs(object):
         """
         swift = self.client_manager.get_swift()
         glance = self.client_manager.get_glance()
-        backup = self._get_backups(path, restore_from_timestamp)
+        restore_from_timestamp = backup.time_stamp
         if self.storage.type == 'ceph':
             info = self.storage.get_header(backup)
             path = "{0}/{1}_{2}".format(self.container, path, backup.backup_id)
@@ -256,9 +236,8 @@ class RestoreOs(object):
         LOG.info("Deleting temporary image {}".format(image.id))
         self.client_manager.get_glance().images.delete(image.id)
 
-    def restore_nova(self, instance_id, restore_from_timestamp,
-                     nova_network=None, backup_nova_name=None, 
-                     backup_flavor_id=None, nova_backup_id=None):
+    def restore_nova(self, instance_id, backup, nova_network=None,
+                     backup_nova_name=None, backup_flavor_id=None):
         """
         :param restore_from_timestamp:
         :type restore_from_timestamp: int
@@ -275,7 +254,7 @@ class RestoreOs(object):
         # a project, find all available network in restore nova.
         # implementation it after tenant backup add get_neutron in
         # openstack oslient.
-        (info, image) = self._create_image(instance_id, restore_from_timestamp)
+        (info, image) = self._create_image(instance_id, backup)
         nova = self.client_manager.get_nova()
         
         if backup_nova_name :
