@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/freezer/utils/backup.py" line="63" mnemonic="9" />
-    <bookmark url="file://$PROJECT_DIR$/freezer/job.py" line="148" />
-  </component>
   <component name="ChangeListManager">
     <list default="true" id="d51f94d3-2b6d-4b60-8415-4b27c6045e1f" name="Default" comment="">
       <change type="DELETED" beforePath="$PROJECT_DIR$/../freezer-api/bindep.txt" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/common/config.py" afterPath="$PROJECT_DIR$/freezer/common/config.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/freezer/job.py" afterPath="$PROJECT_DIR$/freezer/job.py" />
     </list>
     <ignored path="freezer.iws" />
@@ -54,8 +49,8 @@
       <file leaf-file-name="job.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/freezer/job.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="533">
-              <caret line="341" column="0" selection-start-line="341" selection-start-column="0" selection-end-line="341" selection-end-column="0" />
+            <state relative-caret-position="2908">
+              <caret line="308" column="83" selection-start-line="308" selection-start-column="83" selection-end-line="308" selection-end-column="83" />
               <folding>
                 <element signature="e#670#680#0" expanded="true" />
               </folding>
@@ -86,8 +81,8 @@
       <file leaf-file-name="backup.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="202">
-              <caret line="181" column="8" selection-start-line="181" selection-start-column="8" selection-end-line="181" selection-end-column="8" />
+            <state relative-caret-position="289">
+              <caret line="156" column="8" selection-start-line="156" selection-start-column="8" selection-end-line="156" selection-end-column="8" />
               <folding>
                 <element signature="e#619#629#0" expanded="true" />
               </folding>
@@ -106,13 +101,6 @@
         </entry>
       </file>
     </leaf>
-  </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Python Script" />
-      </list>
-    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -157,25 +145,6 @@
     <option name="y" value="-8" />
     <option name="width" value="1936" />
     <option name="height" value="1056" />
-  </component>
-  <component name="ProjectInspectionProfilesVisibleTreeState">
-    <entry key="Project Default">
-      <profile-state>
-        <expanded-state>
-          <State>
-            <id />
-          </State>
-          <State>
-            <id>Python</id>
-          </State>
-        </expanded-state>
-        <selected-state>
-          <State>
-            <id>PyCompatibilityInspection</id>
-          </State>
-        </selected-state>
-      </profile-state>
-    </entry>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -587,9 +556,6 @@
   <component name="ShelveChangesManager" show_recycled="false">
     <option name="remove_strategy" value="false" />
   </component>
-  <component name="SvnConfiguration">
-    <configuration />
-  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="d51f94d3-2b6d-4b60-8415-4b27c6045e1f" name="Default" comment="" />
@@ -623,9 +589,6 @@
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
     </layout>
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="processedProjectFiles" value="true" />
   </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
@@ -995,16 +958,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="202">
-          <caret line="181" column="8" selection-start-line="181" selection-start-column="8" selection-end-line="181" selection-end-column="8" />
-          <folding>
-            <element signature="e#619#629#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/freezer/common/config.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="279">
@@ -1023,10 +976,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/freezer/utils/backup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="156" column="8" selection-start-line="156" selection-start-column="8" selection-end-line="156" selection-end-column="8" />
+          <folding>
+            <element signature="e#619#629#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/freezer/job.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="533">
-          <caret line="341" column="0" selection-start-line="341" selection-start-column="0" selection-end-line="341" selection-end-column="0" />
+        <state relative-caret-position="2908">
+          <caret line="308" column="83" selection-start-line="308" selection-start-column="83" selection-end-line="308" selection-end-column="83" />
           <folding>
             <element signature="e#670#680#0" expanded="true" />
           </folding>

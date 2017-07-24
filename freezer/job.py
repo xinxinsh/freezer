@@ -107,7 +107,18 @@ class InfoJob(Job):
 class BackupJob(Job):
 
     def _validate(self):
-        pass
+        if self.conf.bakcup_media == 'nova' \
+                and not self.conf.nova_inst_id:
+            raise ValueError(" --nova_inst_id should be set")
+        elif self.conf.backup_media == 'cindernative' \
+                and not self.conf.cindernative_vol_id:
+            raise ValueError("--cindernative_vol_id should be set")
+        elif self.conf.backup_media == 'trove' \
+                and not self.conf.trove_instance_id:
+            raise ValueError("--trove_instance_id should be set")
+
+        if not self.conf.container:
+            raise ValueError("--container is required")
 
     def execute(self):
         LOG.info('Backup job started. '
@@ -186,7 +197,7 @@ class BackupJob(Job):
                                                 incremental=self.conf.incremental,
                                                 backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
-        elif backup_media == 'cindernative' or backup_media == 'cinder':
+        elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
                                                self.conf.incremental))
@@ -234,18 +245,26 @@ class RestoreJob(Job):
 
     def execute(self):
         LOG.info('Executing Restore...')
-
-        backup = None
         backup_media = self.conf.backup_media
+
+        source_id = None
+        if backup_media == 'nova':
+            source_id = self.conf.nova_inst_id
+        elif backup_media == 'cindernative':
+            source_id = self.conf.cindernative_vol_id
+        elif backup_media == 'trove':
+            source_id = self.conf.trove_instance_id
+        else:
+            raise Exception("unknown backup type: %s" % self.conf.backup_media)
 
         restore_timestamp = None
         if self.conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
-            backup = db.Backup.get_latest_backup(self.conf.nova_inst_id, restore_timestamp)
+            backup = db.Backup.get_latest_backup(source_id, restore_timestamp)
         res = restore_service.RestoreOs(self.conf.client_manager,
                                         self.conf.container,
                                         self.storage)
-
+        backup = None
         if backup_media == 'nova':
             backup = db.Backup.get_by_id(self.conf.nova_backup_id)
             if backup:
