@@ -203,7 +203,7 @@ class Backup(base.VersionedObject):
 
     @classmethod
     def get_by_id(cls, backup_id):
-        db_backup = api_client().get(backup_id)
+        db_backup = api_client().backups.get(backup_id)
         return cls._from_db_backup(cls(), db_backup)
 
 
