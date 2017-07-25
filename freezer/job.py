@@ -277,17 +277,17 @@ class RestoreJob(Job):
         if backup_media == 'nova':
             if self.conf.is_rollback:
                 LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, restore_timestamp))
-                res.rollback_nova(self.conf.nova_inst_id, restore_timestamp)
+                         .format(self.conf.nova_inst_id, backup.time_stamp ))
+                res.rollback_nova(self.conf.nova_inst_id, backup)
             elif self.conf.is_template:
                 LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, restore_timestamp))
-                res.model_nova(self.conf.nova_inst_id, restore_timestamp)
+                         .format(self.conf.nova_inst_id, backup.time_stamp))
+                res.model_nova(self.conf.nova_inst_id, backup)
             else:
                 LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
                          "network-id: {2}, backup-nova-name: {3}, "
                          "backup-flavor-id: {4}".format(self.conf.nova_inst_id,
-                                                        restore_timestamp,
+                                                        backup.time_stamp,
                                                         self.conf.nova_restore_network,
                                                         self.conf.backup_nova_name,
                                                         self.conf.backup_flavor_id))
