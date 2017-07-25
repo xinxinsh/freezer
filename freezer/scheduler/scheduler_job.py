@@ -366,8 +366,8 @@ class Job(object):
 
             if error:
                 LOG.error("Freezer client error: {0}".format(error))
-            elif output:
-                self.upload_metadata(output)
+            #elif output:
+            #    self.upload_metadata(output)
 
             if self.process.returncode == -15:
                 # This means the job action was aborted by the scheduler

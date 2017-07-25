@@ -65,7 +65,7 @@ DEFAULT_PARAMS = {
     'remove_from_date': None,
     'restart_always_level': False,
     'config': None,
-    'osrc': '/root/admin-openrc',
+#    'osrc': '/root/admin-openrc',
     'mysql_conf': False,
     'insecure': False,
     'max_priority': None,
