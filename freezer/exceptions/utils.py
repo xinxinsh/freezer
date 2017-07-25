@@ -6,3 +6,10 @@ class TimeoutException(Exception):
         if not message:
             message = self.msg
         super(TimeoutException, self).__init__(message, kwargs)
+class NotSupportException(Exception):
+    msg = "Does Not Suupport."
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.msg
+        super(NotSupportException, self).__init__(message, kwargs)

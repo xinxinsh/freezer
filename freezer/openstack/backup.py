@@ -20,6 +20,7 @@ import time
 from oslo_log import log
 
 from freezer.utils import utils
+from freezer.exceptions import utils as ex_utils
 from freezer.utils import backup as db_backup
 
 LOG = log.getLogger(__name__)
@@ -47,6 +48,10 @@ class BackupOs(object):
         :param name: name of this backup
         :return:
         """
+        nova_volume_type = connection_info['driver_volume_type'] 
+        if incremental and (self.storage.type != 'ceph' or nova_volume_type != 'rbd'):
+            raise ex_utils.NotSupportException("Does Not Support Incremental Backup")
+
         instance_id = instance_id
         client_manager = self.client_manager
         nova = client_manager.get_nova()
@@ -71,11 +76,6 @@ class BackupOs(object):
         nova.servers.update_task(instance_id, 'image_backuping')
         package = "{0}_{1}_{2}".format(instance_id, backup_id, backup.time_stamp)
 
-        if self.storage.type == 'ceph' and connection_info['driver_volume_type'] == 'rbd':
-            incremental = True
-        else:
-            incremental = False
-
         LOG.debug("Creation {0} backup".format('INCREMENTAL' if incremental else 'FULL'))
 
         headers = {"x-object-meta-name": instance.name,
@@ -84,16 +84,15 @@ class BackupOs(object):
         latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
         if incremental and latest_backup:
             backup.backup_chain_name = latest_backup.backup_chain_name
+            backup.parent_id = latest_backup.backup_id
         else:
             backup.backup_chain_name = backup.backup_id
-
+            backup.parent_id = None
+        backup.source_id = instance_id
         info = self.storage.backup(connection_info, package, headers, backup)
 
         nova.servers.update_task(instance_id, None, 'image_backuping')
 
-        if backup:
-            backup.source_id = instance_id
-            backup.parent_id = (None if not latest_backup else latest_backup.backup_id)
 
         return info
 
