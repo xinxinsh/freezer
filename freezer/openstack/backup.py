@@ -48,10 +48,6 @@ class BackupOs(object):
         :param name: name of this backup
         :return:
         """
-        nova_volume_type = connection_info['driver_volume_type'] 
-        if incremental and (self.storage.type != 'ceph' or nova_volume_type != 'rbd'):
-            raise ex_utils.NotSupportException("Does Not Support Incremental Backup")
-
         instance_id = instance_id
         client_manager = self.client_manager
         nova = client_manager.get_nova()
@@ -69,6 +65,10 @@ class BackupOs(object):
                                                 instance.__dict__['OS-EXT-STS:task_state']))
 
         connection_info = nova.servers.connection_info(instance_id)._info
+        nova_volume_type = connection_info['driver_volume_type'] 
+        if incremental and (self.storage.type != 'ceph' or nova_volume_type != 'rbd'):
+            raise ex_utils.NotSupportException("Does Not Support Incremental Backup")
+
         if backup is not None:
             backup.source_id = instance_id
             backup.save()
