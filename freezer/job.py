@@ -162,6 +162,7 @@ class BackupJob(Job):
             LOG.exception(e)
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
+                backup.failed_reason = e.message
                 backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
                 backup.end_time_stamp = utils.DateTime.now().timestamp
                 backup.save()
@@ -242,6 +243,7 @@ class RestoreJob(Job):
         LOG.info('Executing Restore...')
         backup_media = self.conf.backup_media
 
+        backup = None
         source_id = None
         if backup_media == 'nova':
             source_id = self.conf.nova_inst_id
@@ -256,10 +258,11 @@ class RestoreJob(Job):
         if self.conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
             backup = db.Backup.get_latest_backup(source_id, restore_timestamp)
+
         res = restore_service.RestoreOs(self.conf.client_manager,
                                         self.conf.container,
                                         self.storage)
-        backup = None
+
         if backup_media == 'nova':
             backup = db.Backup.get_by_id(self.conf.nova_backup_id)
             if backup:
@@ -268,6 +271,10 @@ class RestoreJob(Job):
                 raise ValueError("backup id does not exist".format(self.conf.nova_backup_id))
         elif backup_media == 'cindernative':
             backup = db.Backup.get_by_id(self.conf.cindernative_backup_id)
+            if backup:
+                restore_timestamp = backup.time_stamp
+            else:
+                raise ValueError("backup id does not exist".format(self.conf.cindernative_backup_id))
         elif backup_media == 'trove':
             backup = db.Backup.get_by_id(self.conf.trove_backup_id)
         if backup is not None:

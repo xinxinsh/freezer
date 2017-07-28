@@ -84,6 +84,7 @@ class Backup(base.VersionedObject):
         'storage': fields.StringField(default='ceph'),
         'mode': fields.StringField(default='cindernative'),
         'status': BackupStatusField(nullable=True),
+        'failed_reason': fields.StringField(nullable=True),
         'compression': fields.StringField(nullable=True),
         'consistency_checksum': fields.StringField(nullable=True),
     }
