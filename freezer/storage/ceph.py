@@ -382,6 +382,20 @@ class CephStorage(physical.PhysicalStorage):
             LOG.info(msg)
             raise exceptions.BackupOperationError(msg)
 
+    def get_size(self, info):
+        src_conn = info['data']
+        src_pool, src_name = src_conn['name'].rsplit('/', 1)
+        src_user = src_conn['auth_username']
+        src_cluster = src_conn['cluster_name']
+        src_conf = self._create_ceph_conf(src_conn['hosts'], src_conn['ports'],
+                                          src_conn['keyring'])
+        src_client = RADOSClient(self, src_pool, src_user, src_cluster, src_conf)
+        src_image = self.rbd.Image(src_client.ioctx, freezer_utils.convert_str(src_name))
+        src_size = src_image.size()
+        image_size = src_size
+        src_image.close();
+        return image_size
+        
     def backup(self, connection_info, backup_name, headers=None, backup=None):
         src_conn = connection_info['data']
         src_pool, src_name = src_conn['name'].rsplit('/', 1)

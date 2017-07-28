@@ -41,6 +41,12 @@ class BackupOs(object):
         self.container = container
         self.storage = storage
 
+    def get_nova_size(self, instance_id):
+        client_manager = self.client_manager
+        nova = client_manager.get_nova()
+        info = nova.servers.connection_info(instance_id)._info
+        return self.storage.get_size(info)
+        
     def backup_nova(self, instance_id, name=None, incremental=True, backup=None):
         """
         Implement nova backup
