@@ -31,9 +31,11 @@ from freezer.openstack import restore as restore_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
+from freezer.utils import quota
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
+QUOTA = quota.QUOTA
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -128,14 +130,32 @@ class BackupJob(Job):
         mod_name = 'freezer.mode.{0}.{1}'.format(
             self.conf.mode, self.conf.mode.capitalize() + 'Mode')
         app_mode = importutils.import_object(mod_name, self.conf)
-        self.conf.time_stamp = utils.DateTime.now().timestamp
 
+        backup_os = backup_service.BackupOs(self.conf.client_manager,
+                                            self.conf.container,
+                                            self.storage)
+        try:
+            size = 1
+            backup_media = self.conf.backup_media
+            if backup_media == 'nova':
+                size = backup_os.get_nova_size(self.conf.nova_inst_id)
+            elif backup_media == 'cindernative':
+                size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
+            elif backup_media == 'trove':
+                size = backup_os.get_trove_size(self.conf.trove_instance_id)
+
+            reserve_opts = {'backups': 1,
+                            'backup_bytes': size}
+            QUOTA.reserve(**reserve_opts)
+        except Exception as e:
+            raise e
+
+        self.conf.time_stamp = utils.DateTime.now().timestamp
         backup = None
         try:
             kwargs = {
                 'curr_backup_level': 0,
                 'client_os': sys.platform,
-                'project_id': self.conf.project_id,
                 'description': self.conf.description,
                 'client_version': self.conf.__version__,
                 'time_stamp': self.conf.time_stamp,
@@ -160,6 +180,7 @@ class BackupJob(Job):
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
+            QUOTA.rollback()
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
@@ -174,16 +195,13 @@ class BackupJob(Job):
 
         return backup.to_primitive()
 
-    def backup(self, app_mode, db_backup):
+    def backup(self, backup_os, db_backup):
         """
-        :param app_mode: freezer.mode.mode.Mode
+        :param backup_os: freezer.openstack.backup
         :param db_backup: backup dict
         :return:
         """
         backup_media = self.conf.backup_media
-        backup_os = backup_service.BackupOs(self.conf.client_manager,
-                                            self.conf.container,
-                                            self.storage)
         backup_meta = None
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(

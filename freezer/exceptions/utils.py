@@ -6,6 +6,8 @@ class TimeoutException(Exception):
         if not message:
             message = self.msg
         super(TimeoutException, self).__init__(message, kwargs)
+
+
 class NotSupportException(Exception):
     msg = "Does Not Suupport."
 
@@ -13,3 +15,13 @@ class NotSupportException(Exception):
         if not message:
             message = self.msg
         super(NotSupportException, self).__init__(message, kwargs)
+
+
+class ExceedQuotaException(Exception):
+    msg = "Exceed backup quota"
+
+    def __int__(self, message=None, **kwargs):
+        if not message:
+            message = self.msg
+        super(ExceedQuotaException, self).__init__(message, kwargs)
+

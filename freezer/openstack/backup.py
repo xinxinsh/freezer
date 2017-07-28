@@ -52,6 +52,8 @@ class BackupOs(object):
         Implement nova backup
         :param instance_id: Id of the instance for backup
         :param name: name of this backup
+        :param incremental: type of this backup
+        :param backup: db record of this backup
         :return:
         """
         instance_id = instance_id
@@ -75,10 +77,6 @@ class BackupOs(object):
         if incremental and (self.storage.type != 'ceph' or nova_volume_type != 'rbd'):
             raise ex_utils.NotSupportException("Does Not Support Incremental Backup")
 
-        if backup is not None:
-            backup.source_id = instance_id
-            backup.save()
-
         nova.servers.update_task(instance_id, 'image_backuping')
         package = "{0}_{1}_{2}".format(instance_id, backup_id, backup.time_stamp)
 
@@ -98,7 +96,6 @@ class BackupOs(object):
         info = self.storage.backup(connection_info, package, headers, backup)
 
         nova.servers.update_task(instance_id, None, 'image_backuping')
-
 
         return info
 
