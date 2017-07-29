@@ -117,8 +117,6 @@ class BackupJob(Job):
         if not self.conf.container:
             raise ValueError("--container is required")
 
-        if not self.conf.project_id:
-            raise ValueError("--project_id is required")
 
     def execute(self):
         LOG.info('Backup job started. '
@@ -159,7 +157,6 @@ class BackupJob(Job):
             kwargs = {
                 'curr_backup_level': 0,
                 'client_os': sys.platform,
-                'project_id': self.conf.project_id,
                 'description': self.conf.description,
                 'client_version': self.conf.__version__,
                 'time_stamp': self.conf.time_stamp,

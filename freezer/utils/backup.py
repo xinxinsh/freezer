@@ -67,7 +67,6 @@ class Backup(base.VersionedObject):
         'curr_backup_level': fields.IntegerField(nullable=True),
         'client_os': fields.StringField(nullable=True),
         'source_id': fields.UUIDField(),
-        'project_id': fields.UUIDField(),
         'size': fields.IntegerField(nullable=True),
         'description': fields.StringField(nullable=True),
         'end_time_stamp': fields.IntegerField(nullable=True),
