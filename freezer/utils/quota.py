@@ -26,6 +26,7 @@ LOG = log.getLogger(__name__)
 class BackupQuota(object):
     """"""
     def __int__(self):
+<<<<<<< HEAD
         self._api_client = None
         self._backups = 0
         self._backup_bytes = 0
@@ -64,6 +65,45 @@ class BackupQuota(object):
 
         self.backups = backups
         self.backup_bytes = backup_bytes
+=======
+        self.api_client = None
+        self.backups = 0
+        self.backup_bytes = 0
+
+    @property
+    def _api_client(self):
+        """lazy load the api_client so we give a change for the config file
+        to be read before grab the config for which api_client to use
+        """
+        if self.api_client:
+            return self.api_client
+        self.api_client = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
+        return self.api_client
+
+    @property
+    def _backups(self):
+        return self.backups
+
+    @property
+    def _backup_bytes(self):
+        return self.backup_bytes
+
+    @_backups.setter
+    def _backups(self, backups):
+        self.backups = backups
+
+    @_backup_bytes.setter
+    def _backup_bytes(self, backup_bytes):
+        self.backup_bytes = backup_bytes
+
+    def reserve(self, backups, backup_bytes, **kwargs):
+        """reserve backup quota and update quota record in db"""
+        quota_list = self._api_client.quotas.list(limit=1, offset=0, search=None)
+        quota = quota_list[0] if quota_list else None
+
+        self._backups = backups
+        self._backup_bytes = backup_bytes
+>>>>>>> d760a1b9c8faf8030eb766ba23fbb0ea2fc0d24a
 
         if quota:
             if (quota['max_num'] < (quota['used_num'] + backups) or
@@ -71,7 +111,11 @@ class BackupQuota(object):
                 raise utils.ExceedQuotaException()
             quota['used_num'] += backups
             quota['used_bytes'] += backup_bytes
+<<<<<<< HEAD
             self.api_client.quotas.update(quota['quota_id'], quota)
+=======
+            self._api_client.quotas.update(quota['quota_id'], quota)
+>>>>>>> d760a1b9c8faf8030eb766ba23fbb0ea2fc0d24a
         else:
             return
 
@@ -80,11 +124,19 @@ class BackupQuota(object):
 
     def rollback(self, **kwargs):
         """rollback backup quota and update quota record in db"""
+<<<<<<< HEAD
         quota_list = self.api_client.quotas.list(limit=1, offset=0, search=None)
+=======
+        quota_list = self._api_client.quotas.list(limit=1, offset=0, search=None)
+>>>>>>> d760a1b9c8faf8030eb766ba23fbb0ea2fc0d24a
         quota = quota_list[0] if quota_list else None
         if quota:
             quota['used_num'] -= self._backups
             quota['used_vol'] -= self._backup_bytes
+<<<<<<< HEAD
             self.api_client.quotas.update(quota['quota_id'], quota)
+=======
+            self._api_client.quotas.update(quota['quota_id'], quota)
+>>>>>>> d760a1b9c8faf8030eb766ba23fbb0ea2fc0d24a
 
 QUOTA = BackupQuota()

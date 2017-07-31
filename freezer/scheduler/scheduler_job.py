@@ -335,7 +335,7 @@ class Job(object):
         tries = max_tries
         token = job_action.get('token', None)
         freezer_action = job_action.get('freezer_action', {})
-        project_id = freezer_action.get('project_id', None)
+        project_id = job_action.get('project_id', None)
         max_retries_interval = job_action.get('max_retries_interval', 60)
         action_name = freezer_action.get('action', '')
         while tries:
