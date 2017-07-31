@@ -141,14 +141,19 @@ class BackupJob(Job):
             if backup_media == 'nova':
                 size = backup_os.get_nova_size(self.conf.nova_inst_id)
             elif backup_media == 'cindernative':
+                #TODO:pls, implement get_cinder_size method
                 size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
             elif backup_media == 'trove':
+                #TODO:pls, implement get_trove_size method
                 size = backup_os.get_trove_size(self.conf.trove_instance_id)
 
             reserve_opts = {'backups': 1,
                             'backup_bytes': size}
             QUOTA.reserve(**reserve_opts)
         except Exception as e:
+            LOG.error('Executing {0} backup failed'.format(
+                self.conf.backup_media))
+            LOG.exception(e)
             raise e
 
         self.conf.time_stamp = utils.DateTime.now().timestamp
