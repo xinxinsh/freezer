@@ -19,59 +19,42 @@ from freezer.exceptions import utils
 from freezerclient.v1 import client
 
 
+api = None
+
+
+def api_client():
+    global api
+    if api is None:
+        api = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
+    return api
+
+
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
 
 class BackupQuota(object):
-    """"""
+
     def __int__(self):
-        self.api_client = None
-        self.backups = 0
-        self.backup_bytes = 0
-
-    @property
-    def api_client(self):
-        """lazy load the api_client so we give a change for the config file
-        to be read before grab the config for which api_client to use
-        """
-        if self._api_client:
-            return self._api_client
-
-        self._api_client = client.Client(opts=CONF, insecure=False if CONF.insecure else True)
-        return self._api_client
-
-    @property
-    def backups(self):
-        return self._backups
-
-    @property
-    def backup_bytes(self):
-        return self._backup_bytes
-
-    @backups.setter
-    def backups(self, backups):
-        self._backups = backups
-
-    @backup_bytes.setter
-    def backup_bytes(self, backup_bytes):
-        self._backup_bytes = backup_bytes
+        self._api_client = None
+        self._backups = 0
+        self._backup_bytes = 0
 
     def reserve(self, backups, backup_bytes, **kwargs):
         """reserve backup quota and update quota record in db"""
-        quota_list = self._api_client.quotas.list(limit=1, offset=0, search=None)
+        quota_list = api_client().quotas.list(limit=1, offset=0, search=None)
         quota = quota_list[0] if quota_list else None
 
-        self.backups = backups
-        self.backup_bytes = backup_bytes
+        self._backups = backups
+        self._backup_bytes = backup_bytes
 
         if quota:
             if (quota['max_num'] < (quota['used_num'] + backups) or
                     quota['max_vol'] < (quota['used_vol'] + backup_bytes)):
-                raise utils.ExceedQuotaException()
+                raise utils.ExceedQuotaException("Exceed backup quota limitation")
             quota['used_num'] += backups
             quota['used_bytes'] += backup_bytes
-            self.api_client.quotas.update(quota['quota_id'], quota)
+            api_client().quotas.update(quota['quota_id'], quota)
         else:
             return
 
@@ -80,11 +63,11 @@ class BackupQuota(object):
 
     def rollback(self, **kwargs):
         """rollback backup quota and update quota record in db"""
-        quota_list = self.api_client.quotas.list(limit=1, offset=0, search=None)
+        quota_list = api_client().quotas.list(limit=1, offset=0, search=None)
         quota = quota_list[0] if quota_list else None
         if quota:
-            quota['used_num'] -= self.backups
-            quota['used_vol'] -= self.backup_bytes
-            self.api_client.quotas.update(quota['quota_id'], quota)
+            quota['used_num'] -= self._backups
+            quota['used_vol'] -= self._backup_bytes
+            api_client().quotas.update(quota['quota_id'], quota)
 
 QUOTA = BackupQuota()

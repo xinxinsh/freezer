@@ -27,9 +27,6 @@ BaseEnumField = fields.BaseEnumField
 CONF = cfg.CONF
 Enum = fields.Enum
 LOG = log.getLogger(__name__)
-
-
-global api
 api = None
 
 
