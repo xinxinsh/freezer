@@ -83,9 +83,8 @@ class BackupQuota(object):
         quota_list = self.api_client.quotas.list(limit=1, offset=0, search=None)
         quota = quota_list[0] if quota_list else None
         if quota:
-            quota['used_num'] -= self._backups
-            quota['used_vol'] -= self._backup_bytes
+            quota['used_num'] -= self.backups
+            quota['used_vol'] -= self.backup_bytes
             self.api_client.quotas.update(quota['quota_id'], quota)
-
 
 QUOTA = BackupQuota()
