@@ -117,6 +117,7 @@ class BackupJob(Job):
         if not self.conf.container:
             raise ValueError("--container is required")
 
+
     def execute(self):
         LOG.info('Backup job started. '
                  'backup_name: {0}, container: {1}, hostname: {2}, mode: {3},'

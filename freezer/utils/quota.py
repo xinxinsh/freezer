@@ -26,9 +26,9 @@ LOG = log.getLogger(__name__)
 class BackupQuota(object):
     """"""
     def __int__(self):
-        self._api_client = None
-        self._backups = 0
-        self._backup_bytes = 0
+        self.api_client = None
+        self.backups = 0
+        self.backup_bytes = 0
 
     @property
     def api_client(self):
@@ -59,7 +59,7 @@ class BackupQuota(object):
 
     def reserve(self, backups, backup_bytes, **kwargs):
         """reserve backup quota and update quota record in db"""
-        quota_list = self.api_client.quotas.list(limit=1, offset=0, search=None)
+        quota_list = self._api_client.quotas.list(limit=1, offset=0, search=None)
         quota = quota_list[0] if quota_list else None
 
         self.backups = backups
@@ -86,5 +86,6 @@ class BackupQuota(object):
             quota['used_num'] -= self._backups
             quota['used_vol'] -= self._backup_bytes
             self.api_client.quotas.update(quota['quota_id'], quota)
+
 
 QUOTA = BackupQuota()
