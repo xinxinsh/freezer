@@ -118,7 +118,6 @@ class BackupJob(Job):
         if not self.conf.container:
             raise ValueError("--container is required")
 
-
     def execute(self):
         LOG.info('Backup job started. '
                  'backup_name: {0}, container: {1}, hostname: {2}, mode: {3},'
@@ -142,10 +141,10 @@ class BackupJob(Job):
             if backup_media == 'nova':
                 size = backup_os.get_nova_size(self.conf.nova_inst_id)
             elif backup_media == 'cindernative':
-                #TODO:pls, implement get_cinder_size method
+                """TODO:pls, implement get_cinder_size method"""
                 size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
             elif backup_media == 'trove':
-                #TODO:pls, implement get_trove_size method
+                """TODO:pls, implement get_trove_size method"""
                 size = backup_os.get_trove_size(self.conf.trove_instance_id)
 
             reserve_opts = {'backups': 1,
@@ -182,12 +181,12 @@ class BackupJob(Job):
             }
             backup = db.Backup(**kwargs)
             backup.create()
-            self.backup(backup_os, backup)
+            self.backup(app_mode, backup_os, backup)
         except Exception as e:
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
-            QUOTA.rollback()
+            QUOTA.rollback(reserve_opts)
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
@@ -203,8 +202,9 @@ class BackupJob(Job):
 
         return backup.to_primitive()
 
-    def backup(self, backup_os, db_backup):
+    def backup(self, app_mode, backup_os, db_backup):
         """
+        :param app_mode:
         :param backup_os: freezer.openstack.backup
         :param db_backup: backup dict
         :return:
@@ -304,6 +304,10 @@ class RestoreJob(Job):
                 raise ValueError("backup id does not exist".format(self.conf.cindernative_backup_id))
         elif backup_media == 'trove':
             backup = db.Backup.get_by_id(self.conf.trove_backup_id)
+            if backup:
+                restore_timestamp = backup.time_stamp
+            else:
+                raise ValueError("backup id does not exist".format(self.conf.trove_backup_id))
         if backup is not None:
             backup.status = db.BackupStatus.RESTORING
             backup.save()
