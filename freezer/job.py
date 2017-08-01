@@ -28,6 +28,7 @@ import six
 
 from freezer.openstack import backup as backup_service
 from freezer.openstack import restore as restore_service
+from freezer.openstack import admin as admin_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
@@ -181,7 +182,7 @@ class BackupJob(Job):
             }
             backup = db.Backup(**kwargs)
             backup.create()
-            self.backup(app_mode, backup)
+            self.backup(backup_os, backup)
         except Exception as e:
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
@@ -196,6 +197,7 @@ class BackupJob(Job):
 
         backup.status = db.BackupStatus.AVAILABLE
         backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
+        backup.backend_id = self.conf.__dict__.get('backend_id') or ''
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
@@ -226,6 +228,7 @@ class BackupJob(Job):
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
+            self.conf.__dict__['backend_id'] = backup_meta['id']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
@@ -360,20 +363,44 @@ class AdminJob(Job):
 
     def _validate(self):
         # no validation required in this job
-        if not self.conf.remove_from_date and not self.conf.remove_older_than:
+        if not self.conf.remove_from_date and \
+                not self.conf.remove_older_than and\
+                not self.conf.backend_id:
             raise ValueError("You need to provide to remove backup older "
                              "than this time. You can use --remove-older-than "
                              "or --remove-from-date")
 
     def execute(self):
         if self.conf.remove_from_date:
-            timestamp = utils.date_to_timestamp(self.conf.remove_from_date)
-        else:
+            timestamp = self.conf.remove_from_date
+        elif self.conf.remove_older_than:
             timestamp = datetime.datetime.now() - \
                 datetime.timedelta(days=self.conf.remove_older_than)
             timestamp = int(time.mktime(timestamp.timetuple()))
 
-        self.storage.remove_older_than(self.engine,
+
+
+        
+        admin_os = admin_service.AdminOs(self.conf.client_manager,
+                                    self.conf.container,
+                                    self.storage)
+        backup_media = self.conf.mode
+        if backup_media == 'nova':
+            LOG.info('Executing nova admin. Instance ID: {0}'.format(
+                self.conf.source_id))
+            admin_os.admin_nova(timestamp,name=self.conf.hostname_backup_name)
+        elif backup_media == 'cindernative':
+            LOG.info('Executing cinder native admin. Volume ID: {0}'
+                     .format(self.conf.source_id))
+            admin_os.admin_cinder(self.conf.source_id,
+                                  self.conf.backend_id)
+        elif backup_media == 'trove':
+            LOG.info('Executing trove admin. Instance ID: {0}'.format(
+                self.conf.source_id))
+            admin_os.admin_trove(self.conf.source_id,
+                                 self.conf.backend_id)
+        else:
+            self.storage.remove_older_than(self.engine,
                                        timestamp,
                                        self.conf.hostname_backup_name)
         return {}
