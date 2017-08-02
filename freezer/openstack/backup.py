@@ -99,6 +99,12 @@ class BackupOs(object):
 
         return info
 
+    def get_cinder_size(self, volume_id):
+        client_manager = self.client_manager
+        cinder = client_manager.get_cinder()
+        size = cinder.volumes.get(volume_id).size
+        return size
+
     def backup_cinder(self, volume_id, name=None, description=None,
                       incremental=True, backup=None):
         client_manager = self.client_manager
@@ -130,6 +136,7 @@ class BackupOs(object):
                                                 incremental=False, force=True)
         backup_volumes = cinder.volumes.get(volume_id)
         backup_meta._info['backup_chain_name'] = backup_volumes.metadata['backup_chain_name']
+        backup_meta._info['size'] = backup_meta.size
         return backup_meta._info
 
     def backup_trove(self, instance, name, description=None,

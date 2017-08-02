@@ -197,6 +197,7 @@ class BackupJob(Job):
         backup.status = db.BackupStatus.AVAILABLE
         backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
         backup.backend_id = self.conf.__dict__.get('backend_id') or ''
+        backup.size = self.conf.__dict__.get('size') or 0
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
@@ -229,6 +230,7 @@ class BackupJob(Job):
                                                   backup=db_backup)
             self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
             self.conf.__dict__['backend_id'] = backup_meta['id']
+            self.conf.__dict__['size'] = backup_meta['size']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
