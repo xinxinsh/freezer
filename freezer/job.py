@@ -391,7 +391,11 @@ class AdminJob(Job):
         if backup_media == 'nova':
             LOG.info('Executing nova admin. Instance ID: {0}'.format(
                 self.conf.source_id))
-            admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
+            backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
+            size = 0;
+            for backup in backups:
+                size += backup.size
+            QUOTA.rollback(len(backups), size)
 
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native admin. Volume ID: {0}'
