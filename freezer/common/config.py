@@ -255,12 +255,12 @@ _COMMON = [
                     "Please provide datetime in format 'YYYY-MM-DDThh:mm:ss' "
                     "i.e. '1979-10-03T23:23:23'. Make sure the 'T' is between "
                     "date and time Default None."),
-    cfg.StrOpt('is-rollback',
+    cfg.BoolOpt('is-rollback',
                dest='is_rollback',
                default=DEFAULT_PARAMS['is_rollback'],
                help="Set this flag to True to rollback instance to "
                     "specified backup, default is false"),
-    cfg.StrOpt('is-template',
+    cfg.BoolOpt('is-template',
                dest='is_template',
                default=DEFAULT_PARAMS['is_template'],
                help="Set this flag to True to Create image with "
