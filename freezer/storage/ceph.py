@@ -405,7 +405,7 @@ class CephStorage(physical.PhysicalStorage):
                                           src_conn['keyring'])
         src_client = RADOSClient(self, src_pool, src_user, src_cluster, src_conf)
         src_image = self.rbd.Image(src_client.ioctx, freezer_utils.convert_str(src_name))
-        src_size = src_image.size()
+        src_size = int(src_image.size())
         backup.size = src_size
         backup_base = backup_name.rsplit("_", 2)[0]
         backup_id = backup.backup_id
