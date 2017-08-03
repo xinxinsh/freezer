@@ -102,7 +102,7 @@ DEFAULT_PARAMS = {
     'restore_discard_excess_bytes': True,
     'compression': None,
     'overwrite': False,
-    'incremental': None,
+    'incremental': True,
     'description':None,
     'consistency_check': False,
     'consistency_checksum': None,
