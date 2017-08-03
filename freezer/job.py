@@ -28,12 +28,15 @@ import six
 
 from freezer.openstack import backup as backup_service
 from freezer.openstack import restore as restore_service
+from freezer.openstack import admin as admin_service
 from freezer.utils import exec_cmd
 from freezer.utils import utils
 from freezer.utils import backup as db
+from freezer.utils import quota
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
+QUOTA = quota.QUOTA
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -128,14 +131,37 @@ class BackupJob(Job):
         mod_name = 'freezer.mode.{0}.{1}'.format(
             self.conf.mode, self.conf.mode.capitalize() + 'Mode')
         app_mode = importutils.import_object(mod_name, self.conf)
-        self.conf.time_stamp = utils.DateTime.now().timestamp
 
+        backup_os = backup_service.BackupOs(self.conf.client_manager,
+                                            self.conf.container,
+                                            self.storage)
+        try:
+            size = 1
+            backup_media = self.conf.backup_media
+            if backup_media == 'nova':
+                size = backup_os.get_nova_size(self.conf.nova_inst_id)
+            elif backup_media == 'cindernative':
+                """TODO:pls, implement get_cinder_size method"""
+                size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
+            elif backup_media == 'trove':
+                """TODO:pls, implement get_trove_size method"""
+                size = backup_os.get_trove_size(self.conf.trove_instance_id)
+
+            reserve_opts = {'backups': 1,
+                            'backup_bytes': size}
+            QUOTA.reserve(**reserve_opts)
+        except Exception as e:
+            LOG.error('Executing {0} backup failed'.format(
+                self.conf.backup_media))
+            LOG.exception(e)
+            raise e
+
+        self.conf.time_stamp = utils.DateTime.now().timestamp
         backup = None
         try:
             kwargs = {
                 'curr_backup_level': 0,
                 'client_os': sys.platform,
-                'project_id': self.conf.project_id,
                 'description': self.conf.description,
                 'client_version': self.conf.__version__,
                 'time_stamp': self.conf.time_stamp,
@@ -155,34 +181,33 @@ class BackupJob(Job):
             }
             backup = db.Backup(**kwargs)
             backup.create()
-            self.backup(app_mode, backup)
+            self.backup(app_mode, backup_os, backup)
         except Exception as e:
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
+            QUOTA.rollback(reserve_opts)
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
+                backup.failed_reason = e.message
                 backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
                 backup.end_time_stamp = utils.DateTime.now().timestamp
                 backup.save()
 
         backup.status = db.BackupStatus.AVAILABLE
-        backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
         return backup.to_primitive()
 
-    def backup(self, app_mode, db_backup):
+    def backup(self, app_mode, backup_os, db_backup):
         """
-        :param app_mode: freezer.mode.mode.Mode
+        :param app_mode:
+        :param backup_os: freezer.openstack.backup
         :param db_backup: backup dict
         :return:
         """
         backup_media = self.conf.backup_media
-        backup_os = backup_service.BackupOs(self.conf.client_manager,
-                                            self.conf.container,
-                                            self.storage)
         backup_meta = None
         if backup_media == 'nova':
             LOG.info('Executing nova backup. Instance ID: {0}'.format(
@@ -200,7 +225,9 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
+            backup.backup_chain_name = backup_meta['backup_chain_name']
+            backup.backend_id = backup_meta['id']
+            backup.size = backup_meta['size']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
@@ -242,6 +269,7 @@ class RestoreJob(Job):
         LOG.info('Executing Restore...')
         backup_media = self.conf.backup_media
 
+        backup = None
         source_id = None
         if backup_media == 'nova':
             source_id = self.conf.nova_inst_id
@@ -256,10 +284,11 @@ class RestoreJob(Job):
         if self.conf.restore_from_date:
             restore_timestamp = utils.date_to_timestamp(self.conf.restore_from_date)
             backup = db.Backup.get_latest_backup(source_id, restore_timestamp)
+
         res = restore_service.RestoreOs(self.conf.client_manager,
                                         self.conf.container,
                                         self.storage)
-        backup = None
+
         if backup_media == 'nova':
             backup = db.Backup.get_by_id(self.conf.nova_backup_id)
             if backup:
@@ -268,8 +297,16 @@ class RestoreJob(Job):
                 raise ValueError("backup id does not exist".format(self.conf.nova_backup_id))
         elif backup_media == 'cindernative':
             backup = db.Backup.get_by_id(self.conf.cindernative_backup_id)
+            if backup:
+                restore_timestamp = backup.time_stamp
+            else:
+                raise ValueError("backup id does not exist".format(self.conf.cindernative_backup_id))
         elif backup_media == 'trove':
             backup = db.Backup.get_by_id(self.conf.trove_backup_id)
+            if backup:
+                restore_timestamp = backup.time_stamp
+            else:
+                raise ValueError("backup id does not exist".format(self.conf.trove_backup_id))
         if backup is not None:
             backup.status = db.BackupStatus.RESTORING
             backup.save()
@@ -329,22 +366,49 @@ class AdminJob(Job):
 
     def _validate(self):
         # no validation required in this job
-        if not self.conf.remove_from_date and not self.conf.remove_older_than:
+        if not self.conf.remove_from_date and \
+                not self.conf.remove_older_than and\
+                not self.conf.nova_backup_id and \
+                not self.conf.cindernative_backup_id and \
+                not self.conf.trove_backup_id:
             raise ValueError("You need to provide to remove backup older "
                              "than this time. You can use --remove-older-than "
                              "or --remove-from-date")
 
     def execute(self):
+        timestamp = None
         if self.conf.remove_from_date:
-            timestamp = utils.date_to_timestamp(self.conf.remove_from_date)
-        else:
+            timestamp = self.conf.remove_from_date
+        elif self.conf.remove_older_than:
             timestamp = datetime.datetime.now() - \
                 datetime.timedelta(days=self.conf.remove_older_than)
             timestamp = int(time.mktime(timestamp.timetuple()))
 
-        self.storage.remove_older_than(self.engine,
-                                       timestamp,
-                                       self.conf.hostname_backup_name)
+        admin_os = admin_service.AdminOs(self.conf.client_manager,
+                                    self.conf.container,
+                                    self.storage)
+        backup_media = self.conf.mode
+        if backup_media == 'nova':
+            LOG.info('Executing nova admin. Instance ID: {0}'.format(
+                self.conf.source_id))
+            backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
+            size = 0;
+            for backup in backups:
+                size += backup.size
+            QUOTA.rollback(len(backups), size)
+
+        elif backup_media == 'cindernative':
+            LOG.info('Executing cinder native admin. Volume ID: {0}'
+                     .format(self.conf.source_id))
+            admin_os.admin_cinder(self.conf.source_id,
+                                  self.conf.backend_id)
+        elif backup_media == 'trove':
+            LOG.info('Executing trove admin. Instance ID: {0}'.format(
+                self.conf.source_id))
+            admin_os.admin_trove(self.conf.source_id,
+                                 self.conf.backend_id)
+        else:
+            raise Exception("unknown admin type: %s" % self.conf.backup_media)
         return {}
 
 

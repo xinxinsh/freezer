@@ -123,11 +123,8 @@ class RestoreOs(object):
         else:
             return {}
 
-    def restore_cinder(self, volume_id=None,
-                       backup_id=None,
-                       dest_volume_id=None,
-                       volume_type=None,
-                       restore_from_timestamp=None):
+    def restore_cinder(self, volume_id=None, backup_id=None, dest_volume_id=None,
+                       volume_type=None, restore_from_timestamp=None):
         """
         Restoring cinder backup using
         :param volume_id:
@@ -137,7 +134,6 @@ class RestoreOs(object):
         :param restore_from_timestamp:
         :return:
         """
-        backup = None
         cinder = self.client_manager.get_cinder()
         search_opts = {
             'volume_id': volume_id,

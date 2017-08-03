@@ -335,16 +335,16 @@ class Job(object):
         tries = max_tries
         token = job_action.get('token', None)
         freezer_action = job_action.get('freezer_action', {})
-        project_id = freezer_action.get('project_id', None)
+        project_id = job_action.get('project_id', None)
         max_retries_interval = job_action.get('max_retries_interval', 60)
         action_name = freezer_action.get('action', '')
-        config_file_name = None
         while tries:
             with tempfile.NamedTemporaryFile(delete=False) as config_file:
                 self.save_action_to_file(freezer_action, config_file)
                 config_file_name = config_file.name
-                freezer_command = '{0} --metadata-out - --config {1} --os-project-id {2} --os-token {3} --os-auth-url {4}'.\
-                    format(self.executable, config_file.name, project_id, token, CONF.os_auth_url)
+                freezer_command = '{0} --metadata-out - --config {1} --os-project-id {2} ' \
+                                  '--os-token {3} --os-auth-url {4}'.\
+                    format(self.executable, config_file_name, project_id, token, CONF.os_auth_url)
                 self.process = subprocess.Popen(freezer_command.split(),
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.PIPE,
@@ -366,9 +366,10 @@ class Job(object):
 
             if error:
                 LOG.error("Freezer client error: {0}".format(error))
-            elif output:
-                self.upload_metadata(output)
-
+            """
+            #elif output:
+            #    self.upload_metadata(output)
+            """
             if self.process.returncode == -15:
                 # This means the job action was aborted by the scheduler
                 LOG.warning('Freezer-agent was killed by the scheduler. '

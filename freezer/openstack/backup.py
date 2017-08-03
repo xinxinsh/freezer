@@ -20,6 +20,7 @@ import time
 from oslo_log import log
 
 from freezer.utils import utils
+from freezer.exceptions import utils as ex_utils
 from freezer.utils import backup as db_backup
 
 LOG = log.getLogger(__name__)
@@ -40,11 +41,19 @@ class BackupOs(object):
         self.container = container
         self.storage = storage
 
+    def get_nova_size(self, instance_id):
+        client_manager = self.client_manager
+        nova = client_manager.get_nova()
+        info = nova.servers.connection_info(instance_id)._info
+        return int(self.storage.get_size(info))
+        
     def backup_nova(self, instance_id, name=None, incremental=True, backup=None):
         """
         Implement nova backup
         :param instance_id: Id of the instance for backup
         :param name: name of this backup
+        :param incremental: type of this backup
+        :param backup: db record of this backup
         :return:
         """
         instance_id = instance_id
@@ -64,38 +73,41 @@ class BackupOs(object):
                                                 instance.__dict__['OS-EXT-STS:task_state']))
 
         connection_info = nova.servers.connection_info(instance_id)._info
-        if backup is not None:
-            backup.source_id = instance_id
-            backup.save()
+        nova_volume_type = connection_info['driver_volume_type'] 
+        if incremental and (self.storage.type != 'ceph' or nova_volume_type != 'rbd'):
+            raise ex_utils.NotSupportException("Does Not Support Incremental Backup")
 
         nova.servers.update_task(instance_id, 'image_backuping')
         package = "{0}_{1}_{2}".format(instance_id, backup_id, backup.time_stamp)
-
-        if self.storage.type == 'ceph' and connection_info['driver_volume_type'] == 'rbd':
-            incremental = True
-        else:
-            incremental = False
 
         LOG.debug("Creation {0} backup".format('INCREMENTAL' if incremental else 'FULL'))
 
         headers = {"x-object-meta-name": instance.name,
                    "x-object-backup-name": name,
                    "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
-        latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
+        backup_insts = db_backup.Backup.get_backups(source_id=instance_id)
+        if backup_insts:
+            latest_backup = backup_insts[0]
+        else:
+            latest_backup = None
         if incremental and latest_backup:
             backup.backup_chain_name = latest_backup.backup_chain_name
+            backup.parent_id = latest_backup.backup_id
         else:
             backup.backup_chain_name = backup.backup_id
-
+            backup.parent_id = None
+        backup.source_id = instance_id
         info = self.storage.backup(connection_info, package, headers, backup)
 
         nova.servers.update_task(instance_id, None, 'image_backuping')
 
-        if backup:
-            backup.source_id = instance_id
-            backup.parent_id = (None if not latest_backup else latest_backup.backup_id)
-
         return info
+
+    def get_cinder_size(self, volume_id):
+        client_manager = self.client_manager
+        cinder = client_manager.get_cinder()
+        size = cinder.volumes.get(volume_id).size
+        return size
 
     def backup_cinder(self, volume_id, name=None, description=None,
                       incremental=True, backup=None):
@@ -128,6 +140,7 @@ class BackupOs(object):
                                                 incremental=False, force=True)
         backup_volumes = cinder.volumes.get(volume_id)
         backup_meta._info['backup_chain_name'] = backup_volumes.metadata['backup_chain_name']
+        backup_meta._info['size'] = backup_meta.size
         return backup_meta._info
 
     def backup_trove(self, instance, name, description=None,
