@@ -49,7 +49,7 @@ class BackupQuota(object):
                     quota['max_vol'] < (quota['used_vol'] + backup_bytes)):
                 raise utils.ExceedQuotaException("Exceed backup quota limitation")
             quota['used_num'] += backups
-            quota['used_bytes'] += backup_bytes
+            quota['used_vol'] += backup_bytes
             self.api_client.quotas.update(quota['quota_id'], quota)
             return quota
         else:
