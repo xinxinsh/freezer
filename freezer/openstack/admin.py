@@ -3,6 +3,7 @@ import os
 import time
 from oslo_log import log
 from freezer.utils import utils
+from freezer.utils import backup as db_backup
 
 LOG = log.getLogger(__name__)
 
@@ -19,23 +20,27 @@ class AdminOs(object):
         self.container = container
         self.storage = storage
 
-    def admin_nova(self,remove_older_timestamp, name=None):
-        nova_key = CephStorage.backup_nova_name_pattern()
-        backups = self.listdir(self.ceph_backup_pool)
-        backups = filter(lambda x: re.search(nova_key, x), backups)
+    def admin_nova(self, remove_older_timestamp, backup_id):
+        backups = []
+        status = ['available', 'error_deleting']
+        if backup_id:
+            backup = db_backup.Backup.get_by_id(backup_id) 
+            backups.append(backup)
+        else:
+            backups = db_backup.Backup.get_backups(status=status, older_than_timestamp=remove_older_timestamp)
+
         for backup in backups:
-            with RADOSClient(self) as client:
-                vol = VolumeMetadataBackup(client, backup)
-                vol_meta = vol.get()
-            backup_name = None
-            if vol_meta:
-                backup_name = jsonutils.loads(vol_meta)['x-object-backup-name']
-            timestamp = backup.rsplit('_', 1)[-1]
-            if int(remove_older_timestamp) >= int(timestamp) \
-                and backup_name == split[1]:
-                LOG.debug("Deleting backup for volume %s.", backup)
-                with RADOSClient(self) as client:
-                    self.rbd.RBD().remove(client.ioctx, backup)
+            backup.status = 'deleting'
+            backup.save()
+            try:
+                self.storage.remove(backup);
+            except Exception:
+                backup.status = 'error_deleting'
+                backup.save()
+                raise Exception("Error Delete Backup %s" % backup.backup_id)
+            backup.destroy()
+         
+         
 
     def admin_cinder(self, volume_id=None, backup_id=None,
                      restore_from_timestamp=None):

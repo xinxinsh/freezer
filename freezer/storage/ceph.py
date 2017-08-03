@@ -24,6 +24,7 @@ import tempfile
 import os
 import subprocess
 import fcntl
+import eventlet
 
 from oslo_log import log
 from oslo_serialization import jsonutils
@@ -223,7 +224,7 @@ class CephStorage(physical.PhysicalStorage):
             timestamp = freezer_utils.DateTime.now().timestamp
         return freezer_utils.convert_str("%s_snap_%s" %(backup_name, timestamp))
 
-    def _delete_base_image(self, backup_name, snap_name, client):
+    def _delete_base_image(self, base_name, snap_name, client):
         """
         try to delete base image
         """
@@ -232,18 +233,18 @@ class CephStorage(physical.PhysicalStorage):
         image_exist = False
 
         rbds = self.rbd.RBD().list(client.ioctx)
-        if backup_name in rbds:
+        if base_name in rbds:
             image_exist = True
 
         if not image_exist:
-            raise self.rbd.ImageNotFound(_("image %s not found") % backup_name)
+            raise self.rbd.ImageNotFound(_("image %s not found") % base_name)
 
         base_image = self.rbd.Image(client.ioctx, base_name)
         while retries > 0:
             snap_exist = self._snap_exist(base_name, snap_name, client)
             if snap_exist:
                 LOG.debug("Deleting backup Snapshot %s" % (snap_name))
-                base_image.remove_snap(new_snap)
+                base_image.remove_snap(snap_name)
             else:
                 LOG.debug("No backup snapshot to delete")
 
@@ -253,15 +254,17 @@ class CephStorage(physical.PhysicalStorage):
                    _LI("Backup base image of volume %(volume)s still "
                        "has %(snapshots)s snapshots so skipping base "
                        "image delete."),
-                    {'snapshots': len(backup_snaps), 'volume': backup_name})
+                    {'snapshots': len(backup_snaps), 'volume': base_name})
                 base_image.close()
                 return
 
             LOG.info(_LI("Deleting backup base image='%(basename)s'"),
                          {'basename': base_name})
                         
+            base_image.close()
             try:
                 self.rbd.RBD().remove(client.ioctx, base_name)
+                VolumeMetadataBackup(client, base_name).remove_if_exists()
             except rbd.ImageBusy:
                 if retries > 0:
                     LOG.info(_LI("Backup image is "
@@ -281,7 +284,6 @@ class CephStorage(physical.PhysicalStorage):
                 retries = 0
             finally:
                 retries -= 1
-        base_image.close()
 
     def _create_base_image(self, base_name, size, client):
         """
@@ -625,53 +627,20 @@ class CephStorage(physical.PhysicalStorage):
         """Returns the pattern used to match cinder or nova backups"""
         return r"^([a-z0-9\-]+?)_([0-9]+?)$"
 
-    def remove_older_than(self, engine, remove_older_timestamp,
-                          hostname_backup_name):
-        """Remove backups older than remove_older_timestamp"""
-        LOG.debug("Delete started for backups older than %s.",
-                  datetime.datetime.fromtimestamp(remove_older_timestamp))
-        split = hostname_backup_name.split('_', 1)
-        cinder = self.client_manager.get_cinder()
-        nova_key = CephStorage.backup_nova_name_pattern()
-        backups = self.listdir(self.ceph_backup_pool)
-        backups = filter(lambda x: re.search(nova_key, x), backups)
-        for backup in backups:
-            with RADOSClient(self) as client:
-                vol = VolumeMetadataBackup(client, backup)
-                vol_meta = vol.get()
+    def remove(self, backup):
+        """Remove backup"""
+        LOG.debug("Delete backup %s with timestamp %s.", backup.backup_id, backup.time_stamp)
+        base_name = self._get_backup_base_name(backup.source_id, backup.backup_chain_name)
+        snap_name = self._get_new_snap_name(backup.backup_id, backup.time_stamp)
+        client = RADOSClient(self, self.ceph_backup_pool)
 
-            backup_name = None
-            if vol_meta:
-                backup_name = jsonutils.loads(vol_meta)['x-object-backup-name']
-            timestamp = backup.rsplit('_', 1)[-1]
-            if int(remove_older_timestamp) >= int(timestamp)    \
-                and backup_name == split[1]:
-                LOG.debug("Deleting backup for volume %s.", backup)
-                with RADOSClient(self) as client:
-                    self.rbd.RBD().remove(client.ioctx, backup)
-
-                LOG.debug("Removing metadata object for volume %s.", backup)
-                with RADOSClient(self) as client:
-                    VolumeMetadataBackup(client, backup).remove_if_exists()
-
-        search_opts = {
-            'name': split[1]
-        }
-        backups = cinder.backups.list(search_opts=search_opts)
-        for backup in backups:
-            backup_created_date = backup.created_at.split('.')[0]
-            backup_created_timestamp = freezer_utils.utc_to_local_timestamp(backup_created_date)
-            if int(remove_older_timestamp) >= int(backup_created_timestamp):
-                LOG.debug("Deleting cindernative backup %s.", backup.id)
-                cinder.backups.delete(backup)
+        try:
+            self._delete_base_image(base_name, snap_name, client)
+        except Exception:
+            raise Exception("unable delete backup %s" % backup.backup_id)
 
     def listdir(self, path):
-        """Return RBD Images prefix with {prefix}"""
-        with RADOSClient(self, path) as client:
-            backups = self.rbd.RBD().list(client.ioctx)
-
-        return backups
-
+        pass
     def rmtree(self, backup):
         pass
 

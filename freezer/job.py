@@ -195,9 +195,6 @@ class BackupJob(Job):
                 backup.save()
 
         backup.status = db.BackupStatus.AVAILABLE
-        backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
-        backup.backend_id = self.conf.__dict__.get('backend_id') or ''
-        backup.size = self.conf.__dict__.get('size') or 0
         backup.end_time_stamp = utils.DateTime.now().timestamp
         backup.save()
 
@@ -228,9 +225,9 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            self.conf.__dict__['backup_chain_name'] = backup_meta['backup_chain_name']
-            self.conf.__dict__['backend_id'] = backup_meta['id']
-            self.conf.__dict__['size'] = backup_meta['size']
+            backup.backup_chain_name = backup_meta['backup_chain_name']
+            backup.backend_id = backup_meta['id']
+            backup.size = backup_meta['size']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
@@ -371,12 +368,15 @@ class AdminJob(Job):
         # no validation required in this job
         if not self.conf.remove_from_date and \
                 not self.conf.remove_older_than and\
-                not self.conf.backend_id:
+                not self.conf.nova_backup_id and \
+                not self.conf.cindernative_backup_id and \
+                not self.conf.trove_backup_id:
             raise ValueError("You need to provide to remove backup older "
                              "than this time. You can use --remove-older-than "
                              "or --remove-from-date")
 
     def execute(self):
+        timestamp = None
         if self.conf.remove_from_date:
             timestamp = self.conf.remove_from_date
         elif self.conf.remove_older_than:
@@ -384,9 +384,6 @@ class AdminJob(Job):
                 datetime.timedelta(days=self.conf.remove_older_than)
             timestamp = int(time.mktime(timestamp.timetuple()))
 
-
-
-        
         admin_os = admin_service.AdminOs(self.conf.client_manager,
                                     self.conf.container,
                                     self.storage)
@@ -394,7 +391,8 @@ class AdminJob(Job):
         if backup_media == 'nova':
             LOG.info('Executing nova admin. Instance ID: {0}'.format(
                 self.conf.source_id))
-            admin_os.admin_nova(timestamp,name=self.conf.hostname_backup_name)
+            admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
+
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native admin. Volume ID: {0}'
                      .format(self.conf.source_id))
@@ -406,9 +404,7 @@ class AdminJob(Job):
             admin_os.admin_trove(self.conf.source_id,
                                  self.conf.backend_id)
         else:
-            self.storage.remove_older_than(self.engine,
-                                       timestamp,
-                                       self.conf.hostname_backup_name)
+            raise Exception("unknown admin type: %s" % self.conf.backup_media)
         return {}
 
 

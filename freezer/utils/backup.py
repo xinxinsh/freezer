@@ -152,20 +152,21 @@ class Backup(base.VersionedObject):
         self.obj_reset_changes()
 
     @classmethod
-    def get_latest_backup(cls, source_id=None, from_timestamp=None):
-        backups = api_client().backups.list(limit=100)
-        backups = list(filter(lambda x: x['backup_metadata']['source_id'] ==
-                       source_id and x['backup_metadata']['status'] == 'available', backups))
-        backups.sort(key=lambda x: x['backup_metadata']['time_stamp'])
+    def get_backups(cls, status=['available'], source_id=None, older_than_timestamp=None):
+        backups = api_client().backups.list()
+        backups = list(filter(lambda x: x['backup_metadata']['status'] in status, backups))
+        if source_id:
+            backups = list(filter(lambda x: x['backup_metadata']['source_id'] == source_id, backups))
+        if older_than_timestamp:
+            backups = list(filter(lambda x: x['backup_metadata']['time_stamp'] <= int(older_than_timestamp), backups))
+        backups.sort(key=lambda x: x['backup_metadata']['time_stamp'], reverse=True)
 
         if not backups:
             return None
-        backup = backups[-1]
-        if from_timestamp:
-            backups = list(filter(lambda x: x['backup_metadata']['time_stamp']
-                           <= from_timestamp, backups))
-            backup = backups[-1]
-        return cls._from_db_backup(cls(), backup)
+        backup_instances = []
+        for backup in backups:
+            backup_instances.append(cls._from_db_backup(cls(), backup))
+        return backup_instances
 
     def save(self):
         updates = self.obj_get_changes()

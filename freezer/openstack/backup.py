@@ -85,7 +85,11 @@ class BackupOs(object):
         headers = {"x-object-meta-name": instance.name,
                    "x-object-backup-name": name,
                    "x-object-meta-flavor-id": str(instance.flavor.get('id'))}
-        latest_backup = db_backup.Backup.get_latest_backup(source_id=instance_id)
+        backup_insts = db_backup.Backup.get_backups(source_id=instance_id)
+        if backup_insts:
+            latest_backup = backup_insts[0]
+        else:
+            latest_backup = None
         if incremental and latest_backup:
             backup.backup_chain_name = latest_backup.backup_chain_name
             backup.parent_id = latest_backup.backup_id
