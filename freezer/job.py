@@ -141,7 +141,6 @@ class BackupJob(Job):
             if backup_media == 'nova':
                 size = backup_os.get_nova_size(self.conf.nova_inst_id)
             elif backup_media == 'cindernative':
-                """TODO:pls, implement get_cinder_size method"""
                 size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
             elif backup_media == 'trove':
                 """TODO:pls, implement get_trove_size method"""
@@ -190,7 +189,6 @@ class BackupJob(Job):
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
-                backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
                 backup.end_time_stamp = utils.DateTime.now().timestamp
                 backup.save()
 
@@ -216,7 +214,7 @@ class BackupJob(Job):
                                                 name=self.conf.backup_name,
                                                 incremental=self.conf.incremental,
                                                 backup=db_backup)
-            self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
+            db_backup.backup_chain_name = backup_meta.backup_chain_name
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
@@ -225,9 +223,9 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            backup.backup_chain_name = backup_meta['backup_chain_name']
-            backup.backend_id = backup_meta['id']
-            backup.size = backup_meta['size']
+            db_backup.backup_chain_name = backup_meta['backup_chain_name']
+            db_backup.backend_id = backup_meta['id']
+            db_backup.size = backup_meta['size']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
