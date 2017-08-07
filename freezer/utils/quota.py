@@ -56,7 +56,6 @@ class BackupQuota(object):
             return {}
 
     def commit(self, **kwargs):
-        
         pass
 
     def rollback(self, backups, backup_bytes, **kwargs):
