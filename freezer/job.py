@@ -384,14 +384,14 @@ class AdminJob(Job):
             timestamp = int(time.mktime(timestamp.timetuple()))
 
         admin_os = admin_service.AdminOs(self.conf.client_manager,
-                                    self.conf.container,
-                                    self.storage)
+                                         self.conf.container,
+                                         self.storage)
         backup_media = self.conf.mode
         if backup_media == 'nova':
             LOG.info('Executing nova admin. Instance ID: {0}'.format(
                 self.conf.source_id))
             backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
-            size = 0;
+            size = 0
             for backup in backups:
                 size += backup.size
             QUOTA.rollback(len(backups), size)
