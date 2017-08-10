@@ -26,6 +26,7 @@ from oslo_log import log
 from oslo_utils import importutils
 import six
 
+from freezer.exceptions import utils as utils_exception
 from freezer.openstack import backup as backup_service
 from freezer.openstack import restore as restore_service
 from freezer.openstack import admin as admin_service
@@ -141,7 +142,6 @@ class BackupJob(Job):
             if backup_media == 'nova':
                 size = backup_os.get_nova_size(self.conf.nova_inst_id)
             elif backup_media == 'cindernative':
-                """TODO:pls, implement get_cinder_size method"""
                 size = backup_os.get_cinder_size(self.conf.cindernative_vol_id)
             elif backup_media == 'trove':
                 """TODO:pls, implement get_trove_size method"""
@@ -154,7 +154,7 @@ class BackupJob(Job):
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
-            raise e
+            raise utils_exception.ExceedQuotaException(e.message)
 
         self.conf.time_stamp = utils.DateTime.now().timestamp
         backup = None
@@ -190,7 +190,6 @@ class BackupJob(Job):
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
-                backup.backup_chain_name = self.conf.__dict__.get('backup_chain_name')
                 backup.end_time_stamp = utils.DateTime.now().timestamp
                 backup.save()
 
@@ -216,7 +215,7 @@ class BackupJob(Job):
                                                 name=self.conf.backup_name,
                                                 incremental=self.conf.incremental,
                                                 backup=db_backup)
-            self.conf.__dict__['backup_chain_name'] = backup_meta.backup_chain_name
+            db_backup.backup_chain_name = backup_meta.backup_chain_name
         elif backup_media == 'cindernative':
             LOG.info('Executing cinder native backup. Volume ID: {0}, '
                      'incremental: {1}'.format(self.conf.cindernative_vol_id,
@@ -225,9 +224,9 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            backup.backup_chain_name = backup_meta['backup_chain_name']
-            backup.backend_id = backup_meta['id']
-            backup.size = backup_meta['size']
+            db_backup.backup_chain_name = backup_meta['backup_chain_name']
+            db_backup.backend_id = backup_meta['id']
+            db_backup.size = backup_meta['size']
         elif backup_media == 'trove':
             LOG.info('Executing trove backup. Instance ID: {0}, '
                      'incremental: {1}'.format(self.conf.trove_instance_id,
@@ -385,14 +384,14 @@ class AdminJob(Job):
             timestamp = int(time.mktime(timestamp.timetuple()))
 
         admin_os = admin_service.AdminOs(self.conf.client_manager,
-                                    self.conf.container,
-                                    self.storage)
+                                         self.conf.container,
+                                         self.storage)
         backup_media = self.conf.mode
         if backup_media == 'nova':
             LOG.info('Executing nova admin. Instance ID: {0}'.format(
                 self.conf.source_id))
             backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
-            size = 0;
+            size = 0
             for backup in backups:
                 size += backup.size
             QUOTA.rollback(len(backups), size)
