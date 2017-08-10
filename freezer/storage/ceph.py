@@ -165,7 +165,7 @@ class CephStorage(physical.PhysicalStorage):
         snaps = rbd_image.list_snaps()
         backup_snaps = []
         for snap in snaps:
-            search_key = r"^([a-z0-9\-]+?)_snap_(.+)$"
+            search_key = CephStorage.backup_nova_name_pattern()
             result = re.search(search_key, snap['name'])
             if result:
                 backup_snaps.append({'name': result.group(0),
@@ -625,7 +625,7 @@ class CephStorage(physical.PhysicalStorage):
     @staticmethod
     def backup_nova_name_pattern():
         """Returns the pattern used to match cinder or nova backups"""
-        return r"^([a-z0-9\-]+?)_([0-9]+?)$"
+        return r"^([a-z0-9\-]+?)_snap_([0-9]+?)$"
 
     def remove(self, backup):
         """Remove backup"""
