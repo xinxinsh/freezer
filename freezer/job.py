@@ -186,7 +186,7 @@ class BackupJob(Job):
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
-            QUOTA.rollback(reserve_opts)
+            QUOTA.rollback(**reserve_opts)
             if backup and 'backup_id' in backup:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
