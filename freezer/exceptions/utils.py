@@ -25,3 +25,26 @@ class ExceedQuotaException(Exception):
             message = self.msg
         super(ExceedQuotaException, self).__init__(message, kwargs)
 
+class FailedBackupException(Exception):
+    msg = "Failed backup"
+
+    def __int__(self, message=None, **kwargs):
+        if not message:
+            message = self.msg
+        super(FailedBackupException, self).__init__(message, kwargs)
+
+class FailedAdminException(Exception):
+    msg = "Failed admin"
+
+    def __int__(self, message=None, **kwargs):
+        if not message:
+            message = self.msg
+        super(FailedAdminException, self).__init__(message, kwargs)
+
+class FailedRestoreException(Exception):
+    msg = "Failed restore"
+
+    def __int__(self, message=None, **kwargs):
+        if not message:
+            message = self.msg
+        super(FailedRestoreException, self).__init__(message, kwargs)

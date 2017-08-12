@@ -336,6 +336,7 @@ class Job(object):
         token = job_action.get('token', None)
         freezer_action = job_action.get('freezer_action', {})
         project_id = job_action.get('project_id', None)
+        request_id = job_action.get('request_id', None)
         max_retries_interval = job_action.get('max_retries_interval', 60)
         action_name = freezer_action.get('action', '')
         while tries:
@@ -343,8 +344,9 @@ class Job(object):
                 self.save_action_to_file(freezer_action, config_file)
                 config_file_name = config_file.name
                 freezer_command = '{0} --metadata-out - --config {1} --os-project-id {2} ' \
-                                  '--os-token {3} --os-auth-url {4}'.\
-                    format(self.executable, config_file_name, project_id, token, CONF.os_auth_url)
+                                  '--os-token {3} --os-auth-url {4} --request-id {5}'.\
+                    format(self.executable, config_file_name, project_id, token, 
+                           CONF.os_auth_url, request_id)
                 self.process = subprocess.Popen(freezer_command.split(),
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.PIPE,
@@ -445,7 +447,11 @@ class Job(object):
                 self.finish()
                 return
 
-            for job_action in self.job_doc.get('job_actions', []):
+            job_actions = self.job_doc.get('job_actions', [])
+            last_action = len(job_actions) - 1
+            if last_action >= 0:
+                job_actions[last_action]['request_id'] = self.job_doc.get('job_id')
+            for job_action in job_actions:
                 if job_action.get('mandatory', False) or\
                         (result == Job.SUCCESS_RESULT):
 

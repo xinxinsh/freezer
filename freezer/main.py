@@ -122,15 +122,20 @@ def run_job(conf, storage):
 
     start_time = utils.DateTime.now()
     LOG.info('Job execution Started at: {0}'.format(start_time))
-    response = freezer_job.execute()
-    end_time = utils.DateTime.now()
-    LOG.info('Job execution Finished, at: {0}'.format(end_time))
-    LOG.info('Job time Elapsed: {0}'.format(end_time - start_time))
-    LOG.info('Backup metadata received: {0}'.format(json.dumps(response)))
-    if not conf.quiet:
+    try:
+        response = freezer_job.execute()
+        end_time = utils.DateTime.now()
+        LOG.info('Job execution Finished, at: {0}'.format(end_time))
+        LOG.info('Job time Elapsed: {0}'.format(end_time - start_time))
+        LOG.info('Backup metadata received: {0}'.format(json.dumps(response)))
         LOG.info("End freezer agent process successfully")
+        freezer_job.send_notify(conf.request_id, True)
+        return utils.send_response(response, conf.metadata_out)
+    except Exception as e:
+        LOG.error("End freezer agent process error")
+        freezer_job.send_notify(conf.request_id, False)
+        raise e
 
-    return utils.send_response(response, conf.metadata_out)
 
 
 def fail(exit_code, e, quiet, do_log=True):

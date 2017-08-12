@@ -112,6 +112,7 @@ DEFAULT_PARAMS = {
     'cindernative_dest_id': None,
     'cindernative_volume_type':None,
     'trove_backup_id': None,
+    'request_id': None,
     'exclude': None,
     'dry_run': False,
     'encrypt_pass_file': None,
@@ -330,6 +331,10 @@ _COMMON = [
                default=DEFAULT_PARAMS['trove_backup_id'],
                dest='trove_backup_id',
                help="Id of the trove backup to be restored"),
+    cfg.StrOpt('request-id',
+               default=DEFAULT_PARAMS['request_id'],
+               dest='request_id',
+               help="Id of the request to send notify"),
     cfg.StrOpt('nova-inst-id',
                dest='nova_inst_id',
                default=DEFAULT_PARAMS['nova_inst_id'],
@@ -421,6 +426,17 @@ _CEPH_OPTS = [
                      'volumes i.e. pad with zeroes.')
 ]
 
+_NOTIFY_OPTS = [
+    cfg.StrOpt('send-api-auth-username',
+               dest='send_api_auth_username',
+               help='The auth user to connect with notification service.'),
+    cfg.StrOpt('send-api-auth-password',
+               dest='send_api_auth_password',
+               help='The auth password to connect with notification service.'),
+    cfg.StrOpt('send-api-auth-url',
+               dest='send_api_auth_url',
+               help='The auth url to connect with notification service.')
+]
 
 def env(*args, **kwargs):
     for v in args:
@@ -539,6 +555,7 @@ def config(args=[]):
     CONF.register_opts(_COMMON)
     CONF.register_opts(_CEPH_OPTS)
     CONF.register_opts(get_osclient_opts())
+    CONF.register_opts(_NOTIFY_OPTS)
     CONF.register_cli_opts(_COMMON)
     CONF.register_cli_opts(_CEPH_OPTS)
     CONF.register_cli_opts(get_osclient_opts())
