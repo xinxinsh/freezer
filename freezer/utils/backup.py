@@ -176,7 +176,8 @@ class Backup(base.VersionedObject):
         self.obj_reset_changes()
 
     def destroy(self):
-        api_client().backups.delete(self.backup_id)
+        if self.obj_attr_is_set('backup_id'):
+            api_client().backups.delete(self.backup_id)
 
     def to_primitive(self):
         primitive = dict()
