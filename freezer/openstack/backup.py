@@ -127,6 +127,21 @@ class BackupOs(object):
                          % volume_id)
                 incremental = False
 
+        backup_insts = db_backup.Backup.get_backups(source_id=volume_id)
+        if backup_insts:
+            latest_backup = backup_insts[0]
+        else:
+            latest_backup = None
+        if incremental and latest_backup:
+            backup.backup_chain_name = latest_backup.backup_chain_name
+            backup.backup_chain_id = latest_backup.backup_chain_id
+            backup.parent_id = latest_backup.backup_id
+        else:
+            backup.backup_chain_name = backup.backup_name
+            backup.backup_chain_id = backup.backup_id
+            backup.parent_id = None
+
+        backup.is_incremental = incremental
         if backup is not None:
             backup.source_id = volume_id
             backup.save()
@@ -135,13 +150,16 @@ class BackupOs(object):
             backup_meta = cinder.backups.create(volume_id, container, name, description,
                                                 incremental=True, force=True)
         else:
-            cinder.volumes.set_metadata(volume_id, {'backup_chain_name': name})
             backup_meta = cinder.backups.create(volume_id, container, name, description,
                                                 incremental=False, force=True)
-        backup_volumes = cinder.volumes.get(volume_id)
-        backup_meta._info['backup_chain_name'] = backup_volumes.metadata['backup_chain_name']
         backup_meta._info['size'] = backup_meta.size
         return backup_meta._info
+
+    def get_trove_size(self, instance_id):
+        client_manager = self.client_manager
+        trove = client_manager.get_trove()
+        size = trove.instances.get(instance_id)._info['volume']['size']
+        return size
 
     def backup_trove(self, instance, name, description=None,
                      incremental=True, backup=None):
@@ -160,13 +178,30 @@ class BackupOs(object):
                 LOG.info(msg)
                 incremental = False
 
+        backup_insts = db_backup.Backup.get_backups(source_id=instance)
+        if backup_insts:
+            latest_backup = backup_insts[0]
+        else:
+            latest_backup = None
+        if incremental and latest_backup:
+            backup.backup_chain_name = latest_backup.backup_chain_name
+            backup.backup_chain_id = latest_backup.backup_chain_id
+            backup.parent_id = latest_backup.backup_id
+        else:
+            backup.backup_chain_name = backup.backup_name
+            backup.backup_chain_id = backup.backup_id
+            backup.parent_id = None
+
+        backup.is_incremental = incremental
         if backup is not None:
             backup.source_id = instance
             backup.save()
 
         if incremental:
-            trove.volume_backups.create(instance, name, description, container,
+            backup_meta = trove.volume_backups.create(instance, name, description, container,
                                         incremental=True)
         else:
-            trove.volume_backups.create(instance, name, description, container,
+            backup_meta = trove.volume_backups.create(instance, name, description, container,
                                         incremental=False)
+
+        return backup_meta._info

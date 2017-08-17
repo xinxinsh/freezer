@@ -239,7 +239,7 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            db_backup.backup_chain_name = backup_meta['backup_chain_name']
+            #db_backup.backup_chain_name = backup_meta['backup_chain_name']
             db_backup.backend_id = backup_meta['id']
             db_backup.size = backup_meta['size']
         elif backup_media == 'trove':
@@ -250,6 +250,8 @@ class BackupJob(Job):
                                    name=self.conf.backup_name,
                                    incremental=self.conf.incremental,
                                    backup=db_backup)
+            db_backup.backend_id = backup_meta['backup_id']
+            db_backup.size = backup_meta['size']
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return backup_meta

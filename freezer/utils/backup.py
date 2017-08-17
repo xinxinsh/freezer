@@ -68,6 +68,8 @@ class Backup(base.VersionedObject):
         'description': fields.StringField(nullable=True),
         'end_time_stamp': fields.IntegerField(nullable=True),
         'backup_chain_name': fields.StringField(nullable=True),
+        'backup_chain_id': fields.UUIDField(),
+        'is_incremental': fields.BooleanField(),
         'parent_id': fields.StringField(nullable=True),
         'client_version': fields.StringField(nullable=True),
         'time_stamp': fields.IntegerField(nullable=True),
@@ -85,7 +87,7 @@ class Backup(base.VersionedObject):
         'consistency_checksum': fields.StringField(nullable=True),
     }
 
-    obj_extra_fields = ['backup_id', 'is_incremental', 'has_dependent_backups']
+    obj_extra_fields = ['backup_id', 'has_dependent_backups']
 
     def __init__(self, context=None, **kwargs):
         super(Backup, self).__init__(context, **kwargs)
