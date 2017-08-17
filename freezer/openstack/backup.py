@@ -92,9 +92,11 @@ class BackupOs(object):
             latest_backup = None
         if incremental and latest_backup:
             backup.backup_chain_name = latest_backup.backup_chain_name
+            backup.backup_chain_id = latest_backup.backup_chain_id
             backup.parent_id = latest_backup.backup_id
         else:
-            backup.backup_chain_name = backup.backup_id
+            backup.backup_chain_name = backup.backup_name
+            backup.backup_chain_id = backup.backup_id
             backup.parent_id = None
         backup.source_id = instance_id
         info = self.storage.backup(connection_info, package, headers, backup)

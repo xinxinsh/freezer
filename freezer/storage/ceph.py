@@ -412,7 +412,7 @@ class CephStorage(physical.PhysicalStorage):
         backup_base = backup_name.rsplit("_", 2)[0]
         backup_id = backup.backup_id
         timestamp = backup.time_stamp
-        chain_name = backup.backup_chain_name
+        chain_name = backup.backup_chain_id
         dst_client = RADOSClient(self, self.ceph_backup_pool)
         
         from_snap = self._get_most_recent_snap(src_image)
@@ -513,7 +513,7 @@ class CephStorage(physical.PhysicalStorage):
     def get_header(self, backup):
         """Get backup metdata"""
         base_id = backup.source_id
-        chain_name = backup.backup_chain_name
+        chain_name = backup.backup_chain_id
         with RADOSClient(self, self.ceph_backup_pool) as client:
             base_name = self._get_backup_base_name(base_id, chain_name)
             backups = self.rbd.RBD().list(client.ioctx)
@@ -530,7 +530,7 @@ class CephStorage(physical.PhysicalStorage):
         base_id = backup.source_id
         backup_id = backup.backup_id
         restore_point = backup.time_stamp
-        chain_name = backup.backup_chain_name
+        chain_name = backup.backup_chain_id
         base_name = self._get_backup_base_name(base_id, chain_name)
         backup_name = "{0}_{1}".format(base_id, backup_id)
 
@@ -630,7 +630,7 @@ class CephStorage(physical.PhysicalStorage):
     def remove(self, backup):
         """Remove backup"""
         LOG.debug("Delete backup %s with timestamp %s.", backup.backup_id, backup.time_stamp)
-        base_name = self._get_backup_base_name(backup.source_id, backup.backup_chain_name)
+        base_name = self._get_backup_base_name(backup.source_id, backup.backup_chain_id)
         snap_name = self._get_new_snap_name(backup.backup_id, backup.time_stamp)
         client = RADOSClient(self, self.ceph_backup_pool)
 
