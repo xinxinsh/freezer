@@ -35,6 +35,10 @@ from freezer.utils import utils
 from freezer.utils import backup as db
 from freezer.utils import quota
 
+import requests
+from requests.auth import HTTPBasicAuth
+from oslo_utils import timeutils
+
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 QUOTA = quota.QUOTA
@@ -75,6 +79,18 @@ class Job(object):
     def execute(self):
         pass
 
+    def send_notify(self, request_id, status):
+        username = self.conf.send_api_auth_username
+        password = self.conf.send_api_auth_password
+        url = self.conf.send_api_auth_url + '/api/v1/logs/api_result'
+        if request_id:
+        #    print(requests.post(url, auth=HTTPBasicAuth(username, password), json={
+        #        'id': request_id,
+        #        'success': status,
+        #        'time': timeutils.utcnow().isoformat()
+        #    }).json())
+            LOG.info("send notify ID of {0} status {1} ".format(request_id, status))
+            LOG.info("send notify auth of user {0} password {1} url {2} ".format(username, password, url))
 
 class InfoJob(Job):
 
@@ -182,22 +198,21 @@ class BackupJob(Job):
             backup = db.Backup(**kwargs)
             backup.create()
             self.backup(app_mode, backup_os, backup)
+            backup.status = db.BackupStatus.AVAILABLE
+            backup.end_time_stamp = utils.DateTime.now().timestamp
+            backup.save()
+            return backup.to_primitive()
         except Exception as e:
             LOG.error('Executing {0} backup failed'.format(
                 self.conf.backup_media))
             LOG.exception(e)
-            QUOTA.rollback(reserve_opts)
-            if backup and 'backup_id' in backup:
+            QUOTA.rollback(**reserve_opts)
+            if backup and backup.backup_id:
                 backup.status = db.BackupStatus.ERROR
                 backup.failed_reason = e.message
                 backup.end_time_stamp = utils.DateTime.now().timestamp
                 backup.save()
-
-        backup.status = db.BackupStatus.AVAILABLE
-        backup.end_time_stamp = utils.DateTime.now().timestamp
-        backup.save()
-
-        return backup.to_primitive()
+            raise utils_exception.FailedBackupException(e)
 
     def backup(self, app_mode, backup_os, db_backup):
         """
@@ -224,7 +239,7 @@ class BackupJob(Job):
                                                   name=self.conf.backup_name,
                                                   incremental=self.conf.incremental,
                                                   backup=db_backup)
-            db_backup.backup_chain_name = backup_meta['backup_chain_name']
+            #db_backup.backup_chain_name = backup_meta['backup_chain_name']
             db_backup.backend_id = backup_meta['id']
             db_backup.size = backup_meta['size']
         elif backup_media == 'trove':
@@ -235,6 +250,8 @@ class BackupJob(Job):
                                    name=self.conf.backup_name,
                                    incremental=self.conf.incremental,
                                    backup=db_backup)
+            db_backup.backend_id = backup_meta['backup_id']
+            db_backup.size = backup_meta['size']
         else:
             raise Exception('unknown parameter backup_media %s' % backup_media)
         return backup_meta
@@ -310,55 +327,59 @@ class RestoreJob(Job):
             backup.status = db.BackupStatus.RESTORING
             backup.save()
 
-        if backup_media == 'nova':
-            if self.conf.is_rollback:
-                LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, backup.time_stamp ))
-                res.rollback_nova(self.conf.nova_inst_id, backup)
-            elif self.conf.is_template:
-                LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
-                         .format(self.conf.nova_inst_id, backup.time_stamp))
-                res.model_nova(self.conf.nova_inst_id, backup)
-            else:
-                LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
-                         "network-id: {2}, backup-nova-name: {3}, "
-                         "backup-flavor-id: {4}".format(self.conf.nova_inst_id,
-                                                        backup.time_stamp,
-                                                        self.conf.nova_restore_network,
-                                                        self.conf.backup_nova_name,
-                                                        self.conf.backup_flavor_id))
+        try:
+            if backup_media == 'nova':
+                if self.conf.is_rollback:
+                    LOG.info("Rollback nova backup. Instance ID: {0}, timestamp: {1} "
+                             .format(self.conf.nova_inst_id, backup.time_stamp ))
+                    res.rollback_nova(self.conf.nova_inst_id, backup)
+                elif self.conf.is_template:
+                    LOG.info("Create image from backup. Instance ID: {0}, timestamp: {1} "
+                             .format(self.conf.nova_inst_id, backup.time_stamp))
+                    res.model_nova(self.conf.nova_inst_id, backup)
+                else:
+                    LOG.info("Restoring nova backup. Instance ID: {0}, timestamp: {1} "
+                             "network-id: {2}, backup-nova-name: {3}, "
+                             "backup-flavor-id: {4}".format(self.conf.nova_inst_id,
+                                                            backup.time_stamp,
+                                                            self.conf.nova_restore_network,
+                                                            self.conf.backup_nova_name,
+                                                            self.conf.backup_flavor_id))
 
-                res.restore_nova(self.conf.nova_inst_id, backup,
-                                 self.conf.nova_restore_network,
-                                 self.conf.backup_nova_name,
-                                 self.conf.backup_flavor_id)
-        elif backup_media == 'cindernative':
-            LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
-                     " {1}, Dest Volume ID {2}, timestamp: {3}".format(self.conf.cindernative_vol_id,
-                                                                       self.conf.cindernative_backup_id,
-                                                                       self.conf.cindernative_dest_id,
-                                                                       restore_timestamp))
-            res.restore_cinder(volume_id=self.conf.cindernative_vol_id,
-                               backup_id=self.conf.cindernative_backup_id,
-                               dest_volume_id=self.conf.cindernative_dest_id,
-                               volume_type=self.conf.cindernative_volume_type,
-                               restore_from_timestamp=restore_timestamp)
-        elif backup_media == 'trove':
-            LOG.info("Restoring cinde backup. Instance ID {0}, Backup ID"
-                     " {1},  timestamp: {2}".format(self.conf.trove_instance_id,
-                                                    self.conf.trove_backup_id,
-                                                    restore_timestamp))
-            res.restore_trove(self.conf.trove_instance_id,
-                              self.conf.trove_backup_id,
-                              restore_timestamp)
-        else:
-            raise Exception("unknown backup type: %s" % self.conf.backup_media)
-        if backup is not None:
-            backup.status = db.BackupStatus.AVAILABLE
-            backup.save()
-            return backup.to_primitive()
-        else:
-            return {}
+                    res.restore_nova(self.conf.nova_inst_id, backup,
+                                     self.conf.nova_restore_network,
+                                     self.conf.backup_nova_name,
+                                     self.conf.backup_flavor_id)
+            elif backup_media == 'cindernative':
+                LOG.info("Restoring cinder native backup. Volume ID {0}, Backup ID"
+                         " {1}, Dest Volume ID {2}, timestamp: {3}".format(self.conf.cindernative_vol_id,
+                                                                           self.conf.cindernative_backup_id,
+                                                                           self.conf.cindernative_dest_id,
+                                                                           restore_timestamp))
+                res.restore_cinder(volume_id=self.conf.cindernative_vol_id,
+                                   backup_id=self.conf.cindernative_backup_id,
+                                   dest_volume_id=self.conf.cindernative_dest_id,
+                                   volume_type=self.conf.cindernative_volume_type,
+                                   restore_from_timestamp=restore_timestamp)
+            elif backup_media == 'trove':
+                LOG.info("Restoring cinde backup. Instance ID {0}, Backup ID"
+                         " {1},  timestamp: {2}".format(self.conf.trove_instance_id,
+                                                        self.conf.trove_backup_id,
+                                                        restore_timestamp))
+                res.restore_trove(self.conf.trove_instance_id,
+                                  self.conf.trove_backup_id,
+                                  restore_timestamp)
+            else:
+                raise Exception("unknown backup type: %s" % self.conf.backup_media)
+            if backup is not None:
+                backup.status = db.BackupStatus.AVAILABLE
+                backup.save()
+                return backup.to_primitive()
+            else:
+                return {}
+
+        except Exception as e:
+            raise utils_exception.FailedRestoreException(e)
 
 
 class AdminJob(Job):
@@ -368,11 +389,10 @@ class AdminJob(Job):
         if not self.conf.remove_from_date and \
                 not self.conf.remove_older_than and\
                 not self.conf.nova_backup_id and \
-                not self.conf.cindernative_backup_id and \
-                not self.conf.trove_backup_id:
+                not self.conf.backend_id:
             raise ValueError("You need to provide to remove backup older "
                              "than this time. You can use --remove-older-than "
-                             "or --remove-from-date")
+                             "or --remove-from-date or backup_id")
 
     def execute(self):
         timestamp = None
@@ -387,28 +407,31 @@ class AdminJob(Job):
                                          self.conf.container,
                                          self.storage)
         backup_media = self.conf.mode
-        if backup_media == 'nova':
-            LOG.info('Executing nova admin. Instance ID: {0}'.format(
-                self.conf.source_id))
-            backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
-            size = 0
-            for backup in backups:
-                size += backup.size
-            QUOTA.rollback(len(backups), size)
+        try:
+            if backup_media == 'nova':
+                LOG.info('Executing nova admin. Instance ID: {0}'.format(
+                    self.conf.source_id))
+                backups = admin_os.admin_nova(timestamp, backup_id=self.conf.nova_backup_id)
+                size = 0
+                for backup in backups:
+                    size += backup.size
+                QUOTA.rollback(len(backups), size)
 
-        elif backup_media == 'cindernative':
-            LOG.info('Executing cinder native admin. Volume ID: {0}'
-                     .format(self.conf.source_id))
-            admin_os.admin_cinder(self.conf.source_id,
-                                  self.conf.backend_id)
-        elif backup_media == 'trove':
-            LOG.info('Executing trove admin. Instance ID: {0}'.format(
-                self.conf.source_id))
-            admin_os.admin_trove(self.conf.source_id,
-                                 self.conf.backend_id)
-        else:
-            raise Exception("unknown admin type: %s" % self.conf.backup_media)
-        return {}
+            elif backup_media == 'cindernative':
+                LOG.info('Executing cinder native admin. Volume ID: {0}'
+                         .format(self.conf.source_id))
+                admin_os.admin_cinder(self.conf.source_id,
+                                      self.conf.backend_id)
+            elif backup_media == 'trove':
+                LOG.info('Executing trove admin. Instance ID: {0}'.format(
+                    self.conf.source_id))
+                admin_os.admin_trove(self.conf.source_id,
+                                     self.conf.backend_id)
+            else:
+                raise Exception("unknown admin type: %s" % self.conf.backup_media)
+            return {}
+        except Exception as e:
+            raise utils_exception.FailedAdminException(e)
 
 
 class ExecJob(Job):
